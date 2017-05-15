@@ -8,7 +8,10 @@ import (
 	"log"
 	"github.com/jlaffaye/ftp"
 	"bytes"
+	"sync"
 )
+
+var lock = &sync.Mutex{}
 
 type File struct {
 	buf []byte
@@ -29,29 +32,38 @@ func poll_ftp() {
 	handleError(err)
 	defer conn.Logout()
 	defer conn.Quit()
+	out := make(chan File)
 
-	for _, file := range  files {
-		fmt.Println("File name " + file.Name)
-		readChannel := read(file)
+	//fan out a 10 go rountines
+	for i := 0; i < 10; i++ {
+		readChannel := read(out)
 		publishChannel := publish(readChannel)
 		delete(publishChannel)
 	}
+
+	for _, file := range  files {
+		fmt.Println("File name " + file.Name)
+		out <- File{nil, file.Name, 0}
+	}
+
+	close(out)
 }
 
-func read(file *ftp.Entry) <- chan File {
+func read(in <- chan File) <- chan File {
 	out := make(chan File)
 	go func() {
 		conn := connectToFtp()
 		defer conn.Logout()
 		defer conn.Quit()
-
-		content, err := conn.Retr(file.Name)
-		defer content.Close()
-		handleError(err)
-		buf, err := ioutil.ReadAll(content)
-		res := File{buf, file.Name, 0}
-		handleError(err)
-		out <- res
+		for file := range in {
+			content, err := conn.Retr(file.fileName)
+			handleError(err)
+			buf, err := ioutil.ReadAll(content)
+			file.buf = buf
+			handleError(err)
+			out <- file
+			content.Close()
+		}
 		close(out)
 	}()
 	return out
@@ -77,7 +89,6 @@ func publish(in <- chan File) <- chan File {
 		close(out)
 	}()
 	return out
-
 }
 
 func delete(in <- chan File) {
@@ -94,10 +105,11 @@ func delete(in <- chan File) {
 	}()
 }
 func connectToFtp() *ftp.ServerConn {
+	lock.Lock()
 	conn, err := ftp.Connect("localhost:2021")
 	handleError(err)
 	conn.Login("ons", "ons")
-
+	lock.Unlock()
 	return conn
 }
 
