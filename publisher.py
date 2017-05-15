@@ -32,9 +32,11 @@ logging.getLogger('asyncio').setLevel(logging.WARNING)
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 loop = asyncio.get_event_loop()
 
+conn = aiohttp.TCPConnector(limit=0, limit_per_host=0)
+
 
 async def publish(ftp_client, file_path, session):
-    fn = os.path.basename(file_path)
+    fn = os.path.basename(str(file_path))
     logger.info("POSTing {}".format(fn))
     async with ftp_client.download_stream(file_path) as ftp_stream:
         async for block in ftp_stream.iter_by_block():
@@ -45,10 +47,10 @@ async def publish(ftp_client, file_path, session):
 
 async def poll_ftp(host, port, login, password):
     async with aioftp.ClientSession(host, port, login, password) as ftp_client:
-        async with aiohttp.ClientSession() as http_session:
+        async with aiohttp.ClientSession(connector=conn) as http_session:
             logger.info("parsing directory")
             for path, info in (await ftp_client.list(recursive=False)):
-                #if info["type"] == "file" and 'book1.xlsx' in str(path):
+                # if info["type"] == "file" and 'book1.xlsx' in str(path):
                 if info["type"] == "file" and path.suffix == ".xlsx":
                     stream = StreamReader()
                     logger.info("streaming file")
