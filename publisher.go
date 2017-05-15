@@ -12,6 +12,7 @@ import (
 )
 
 var lock = &sync.Mutex{}
+var wg = &sync.WaitGroup{}
 
 type File struct {
 	buf []byte
@@ -26,6 +27,8 @@ func handleError(err error) {
 }
 
 func poll_ftp() {
+
+
 	fmt.Println("Poll ftp")
 	conn := connectToFtp()
 	files, err := conn.List("/")
@@ -35,7 +38,7 @@ func poll_ftp() {
 	out := make(chan File)
 
 	//fan out a 10 go rountines
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		readChannel := read(out)
 		publishChannel := publish(readChannel)
 		delete(publishChannel)
@@ -51,6 +54,7 @@ func poll_ftp() {
 
 func read(in <- chan File) <- chan File {
 	out := make(chan File)
+	wg.Add(1)
 	go func() {
 		conn := connectToFtp()
 		defer conn.Logout()
@@ -61,16 +65,18 @@ func read(in <- chan File) <- chan File {
 			buf, err := ioutil.ReadAll(content)
 			file.buf = buf
 			handleError(err)
-			out <- file
 			content.Close()
+			out <- file
 		}
 		close(out)
+		wg.Done()
 	}()
 	return out
 }
 
 func publish(in <- chan File) <- chan File {
 	out := make(chan File)
+	wg.Add(1)
 	go func () {
 		for file := range in {
 
@@ -81,17 +87,19 @@ func publish(in <- chan File) <- chan File {
 			handleError(err)
 			result, err := ioutil.ReadAll(resp.Body)
 			handleError(err)
-			resp.Body.Close()
 			fmt.Printf("%s", result)
 			file.respCode = resp.StatusCode
+			resp.Body.Close()
 			out <- file
 		}
 		close(out)
+		wg.Done()
 	}()
 	return out
 }
 
 func delete(in <- chan File) {
+	wg.Add(1)
 	go func() {
 		conn := connectToFtp()
 		defer conn.Logout()
@@ -102,6 +110,7 @@ func delete(in <- chan File) {
 				handleError(err)
 			}
 		}
+		wg.Done()
 	}()
 }
 func connectToFtp() *ftp.ServerConn {
@@ -115,8 +124,12 @@ func connectToFtp() *ftp.ServerConn {
 
 func main() {
 	fmt.Println("Starting publisher")
-	for {
-		poll_ftp()
-		time.Sleep(time.Minute * 15)
-	}
+
+	startTime := time.Now()
+	poll_ftp()
+	wg.Wait()
+	elasped := time.Since(startTime)
+	fmt.Printf("Total time %s", elasped)
+	fmt.Println()
+
 }
