@@ -17,6 +17,7 @@ func handleError(err error) {
 }
 
 func poll_ftp() {
+	fmt.Println("Poll ftp")
 	conn, err := ftp.Connect("localhost:2021")
 	handleError(err)
 
@@ -26,17 +27,24 @@ func poll_ftp() {
 
 	for _, file := range  files {
 		fmt.Println("File name " + file.Name)
-		content, err := conn.Retr(file.Name)
-		handleError(err)
-		buf, err := ioutil.ReadAll(content)
-
-		handleError(err)
-
-		content.Close()
-		err = ioutil.WriteFile(file.Name, buf, 0644)
-		publish(file.Name, buf, conn)
-		handleError(err)
+		go readAndPublish(file)
 	}
+	conn.Logout()
+	conn.Quit()
+}
+
+func readAndPublish(file *ftp.Entry) {
+	conn, err := ftp.Connect("localhost:2021")
+	handleError(err)
+	conn.Login("ons", "ons")
+	content, err := conn.Retr(file.Name)
+	handleError(err)
+	buf, err := ioutil.ReadAll(content)
+	handleError(err)
+	content.Close()
+	publish(file.Name, buf, conn)
+	conn.Logout()
+	conn.Quit()
 }
 
 func publish(fileName string, buf []byte, conn *ftp.ServerConn) {
@@ -63,6 +71,6 @@ func main() {
 	fmt.Println("Starting publisher")
 	for {
 		poll_ftp()
-		time.Sleep(900000)
+		time.Sleep(time.Minute * 15)
 	}
 }
