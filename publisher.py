@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 #coding: UTF-8
 import asyncio
-from datetime import datetime as dt
 import os
 
 import aioftp
 import aiohttp
 from aiohttp import StreamReader
-from structlog.processors import JSONRenderer, TimeStamper
 import uvloop
 
-import settings
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 loop = asyncio.get_event_loop()
