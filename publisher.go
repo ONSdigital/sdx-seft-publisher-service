@@ -9,6 +9,8 @@ import (
 	"github.com/jlaffaye/ftp"
 	"bytes"
 	"sync"
+	_ "net/http/pprof"
+	"io"
 )
 
 var lock = &sync.Mutex{}
@@ -23,7 +25,7 @@ func handleError(err error) {
 }
 
 
-func read(files <- chan string) {
+func processFiles(files <- chan string) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -69,31 +71,74 @@ func connectToFtp() *ftp.ServerConn {
 }
 
 func main() {
+
+	go webServer()
 	//fmt.Println("Starting publisher")
+	time.Sleep(time.Second * 10)
+	for {
+		startTime := time.Now()
+		//fmt.Println("Poll ftp")
+		conn := connectToFtp()
+		files, err := conn.List("/")
+		handleError(err)
+		defer conn.Logout()
+		defer conn.Quit()
+		fileNames := make(chan string)
 
-	startTime := time.Now()
-	//fmt.Println("Poll ftp")
+		//fan out a 10 go rountines
+		for i := 0; i < 10; i++ {
+			processFiles(fileNames)
+		}
+
+		for _, file := range files {
+			//fmt.Println("File name " + file.Name)
+			fileNames <- file.Name
+		}
+
+		close(fileNames)
+		wg.Wait()
+		elapsed := time.Since(startTime)
+		fmt.Printf("Total time %s", elapsed)
+		fmt.Println()
+		time.Sleep(time.Minute)
+	}
+
+}
+
+func webServer() {
+	http.HandleFunc("/healthcheck", healthCheck)
+	http.ListenAndServe(":8090", http.DefaultServeMux)
+}
+
+
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	ftpRunning := checkFtp()
+	rasRunning := checkRas()
+	status := "FAILED"
+	if checkRas() && checkFtp() {
+		status = "OK"
+	}
+	json := fmt.Sprintf("{\"status\":\"%s\",\"ftp\":%t,\"ras\":%t}", status, ftpRunning, rasRunning)
+	io.WriteString(w, json)
+}
+
+func checkFtp() bool {
 	conn := connectToFtp()
-	files, err := conn.List("/")
-	handleError(err)
-	defer conn.Logout()
-	defer conn.Quit()
-	fileNames := make(chan string)
-
-	//fan out a 20 go rountines
-	for i := 0; i < 10; i++ {
-		read(fileNames)
+	_, err := conn.List("/")
+	if err != nil {
+		log.Print("FTP healthcheck failed")
+	} else {
+		log.Print("FTP healthcheck sucessful")
 	}
+	return err == nil
+}
 
-	for _, file := range files {
-		//fmt.Println("File name " + file.Name)
-		fileNames <- file.Name
+func checkRas() bool {
+	resp, err := http.Head("http://localhost:8080/healthcheck")
+	if err != nil || resp.StatusCode != http.StatusOK {
+		log.Print("RAS healthcheck failed")
+	} else{
+		log.Print("RAS healthcheck successful")
 	}
-
-	close(fileNames)
-	wg.Wait()
-	elasped := time.Since(startTime)
-	fmt.Printf("Total time %s", elasped)
-	fmt.Println()
-
+	return resp.StatusCode == http.StatusOK
 }
