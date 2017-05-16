@@ -20,7 +20,7 @@ def retrieve_and_post(match):
 
 
 def main():
-    pool = Pool(100)
+    pool = Pool(10)
     tasks = []
     ftp = FTP()
     ftp.connect(host='127.0.0.1', port=2121)
