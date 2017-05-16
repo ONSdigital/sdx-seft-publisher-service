@@ -14,105 +14,51 @@ import (
 var lock = &sync.Mutex{}
 var wg = &sync.WaitGroup{}
 
-type File struct {
-	buf []byte
-	fileName string
-	respCode int
-}
 
 func handleError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		panic(err)
 	}
 }
 
-func poll_ftp() {
 
-
-	fmt.Println("Poll ftp")
-	conn := connectToFtp()
-	files, err := conn.List("/")
-	handleError(err)
-	defer conn.Logout()
-	defer conn.Quit()
-	out := make(chan File)
-
-	//fan out a 10 go rountines
-	for i := 0; i < 20; i++ {
-		readChannel := read(out)
-		publishChannel := publish(readChannel)
-		delete(publishChannel)
-	}
-
-	for _, file := range  files {
-		fmt.Println("File name " + file.Name)
-		out <- File{nil, file.Name, 0}
-	}
-
-	close(out)
-}
-
-func read(in <- chan File) <- chan File {
-	out := make(chan File)
+func read(files <- chan string) {
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		conn := connectToFtp()
 		defer conn.Logout()
 		defer conn.Quit()
-		for file := range in {
-			content, err := conn.Retr(file.fileName)
+		for file := range files {
+			content, err := conn.Retr(file)
 			handleError(err)
 			buf, err := ioutil.ReadAll(content)
-			file.buf = buf
 			handleError(err)
 			content.Close()
-			out <- file
-		}
-		close(out)
-		wg.Done()
-	}()
-	return out
-}
 
-func publish(in <- chan File) <- chan File {
-	out := make(chan File)
-	wg.Add(1)
-	go func () {
-		for file := range in {
-
-			fmt.Println("Publishing file")
-			resp, err := http.Post("http://localhost:8080/upload/bres/1/"+ file.fileName,
+			//fmt.Println("Publishing file")
+			resp, err := http.Post("http://localhost:8080/upload/bres/1/"+ file,
 				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-				bytes.NewReader(file.buf))
+				bytes.NewReader(buf))
 			handleError(err)
-			result, err := ioutil.ReadAll(resp.Body)
-			handleError(err)
-			fmt.Printf("%s", result)
-			file.respCode = resp.StatusCode
-			resp.Body.Close()
-			out <- file
-		}
-		close(out)
-		wg.Done()
-	}()
-	return out
-}
+			//_, err := ioutil.ReadAll(resp.Body)
+			//handleError(err)
+			//fmt.Printf("%s", result)
 
-func delete(in <- chan File) {
-	wg.Add(1)
-	go func() {
-		conn := connectToFtp()
-		defer conn.Logout()
-		defer conn.Quit()
-		for file := range in {
-			if file.respCode == 200 {
-				err := conn.Delete(file.fileName)
+			resp.Body.Close()
+
+			if resp.StatusCode == 200 {
+				err := conn.Delete(file)
 				handleError(err)
 			}
+
 		}
-		wg.Done()
+
 	}()
 }
+
+
 func connectToFtp() *ftp.ServerConn {
 	lock.Lock()
 	conn, err := ftp.Connect("localhost:2021")
@@ -123,10 +69,28 @@ func connectToFtp() *ftp.ServerConn {
 }
 
 func main() {
-	fmt.Println("Starting publisher")
+	//fmt.Println("Starting publisher")
 
 	startTime := time.Now()
-	poll_ftp()
+	//fmt.Println("Poll ftp")
+	conn := connectToFtp()
+	files, err := conn.List("/")
+	handleError(err)
+	defer conn.Logout()
+	defer conn.Quit()
+	fileNames := make(chan string)
+
+	//fan out a 20 go rountines
+	for i := 0; i < 10; i++ {
+		read(fileNames)
+	}
+
+	for _, file := range files {
+		//fmt.Println("File name " + file.Name)
+		fileNames <- file.Name
+	}
+
+	close(fileNames)
 	wg.Wait()
 	elasped := time.Since(startTime)
 	fmt.Printf("Total time %s", elasped)
