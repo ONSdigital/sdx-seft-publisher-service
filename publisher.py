@@ -52,9 +52,7 @@ def upload(binary_file, file_name):
 def run():
     pool = Pool(8)
     tasks = []
-    ftp = FTP()
-    ftp.connect(host='127.0.0.1', port=2121)
-    ftp.login(user='ons', passwd='ons')
+    ftp = con()
     files = (file for file in ftp.nlst() if '.xlsx' in os.path.splitext(file)[1])
     for file in files:
         tasks.append(pool.apply_async(retrieve_and_post, args=(file,)))
