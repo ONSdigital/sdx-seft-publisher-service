@@ -9,7 +9,6 @@ import (
 	"github.com/jlaffaye/ftp"
 	"bytes"
 	"sync"
-	_ "net/http/pprof"
 	"io"
 )
 
@@ -17,66 +16,96 @@ var lock = &sync.Mutex{}
 var wg = &sync.WaitGroup{}
 
 
-func handleError(err error) {
-	if err != nil {
-		log.Print(err)
-		panic(err)
-	}
-}
-
-
 func processFiles(files <- chan string) {
 	defer wg.Done()
-	conn := connectToFtp()
+	conn, err := connectToFtp()
+	if err != nil {
+		log.Fatal("Unable to connect to FTP server exiting - aborting")
+	}
 	defer conn.Logout()
 	defer conn.Quit()
 	for file := range files {
-		content, err := conn.Retr(file)
-		handleError(err)
-		buf, err := ioutil.ReadAll(content)
-		handleError(err)
-		content.Close()
-
-		//fmt.Println("Publishing file")
-		resp, err := http.Post("http://localhost:8080/upload/bres/1/"+ file,
-			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-			bytes.NewReader(buf))
-		handleError(err)
-		//_, err := ioutil.ReadAll(resp.Body)
-		//handleError(err)
-		//fmt.Printf("%s", result)
-
-		resp.Body.Close()
-
-		if resp.StatusCode == 200 {
-			err := conn.Delete(file)
-			handleError(err)
+		buf, err := getFileFromFTP(file, conn)
+		if err == nil {
+			status, err := postFileToRas(file, &buf)
+			if status == 200 && err == nil {
+				deleteFileOnFTP(conn, file)
+			}
 		}
+	}
 
+}
+func deleteFileOnFTP(conn *ftp.ServerConn, file string) {
+	err := conn.Delete(file)
+	if err != nil {
+		log.Printf("Unable to delete file %s", file)
 	}
 }
 
 
-func connectToFtp() *ftp.ServerConn {
+func getFileFromFTP(file string, conn *ftp.ServerConn) ([]byte, error)  {
+	content, err := conn.Retr(file)
+	defer content.Close()
+	if err != nil {
+		log.Print("Unable to retrieve file")
+		return nil, err
+	}
+	buf, err := ioutil.ReadAll(content)
+	if err != nil {
+		log.Print("Unable to stream file")
+		return nil, err
+
+	}
+	return buf, nil
+}
+
+
+func postFileToRas(file string, buf *[]byte) (int, error) {
+	resp, err := http.Post("http://localhost:8080/upload/bres/1/"+ file,
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		bytes.NewReader(*buf))
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		log.Printf("Unable to send file %s to RAS", file)
+		return 0, err
+	}
+	return resp.StatusCode, nil
+
+}
+
+func connectToFtp() (*ftp.ServerConn, error) {
+	var err error
 	lock.Lock()
+	defer lock.Unlock()
 	conn, err := ftp.Connect("localhost:2021")
-	handleError(err)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
 	conn.Login("ons", "ons")
-	lock.Unlock()
-	return conn
+	return conn, err
 }
 
 func main() {
 
 	go webServer()
-	//fmt.Println("Starting publisher")
-	time.Sleep(time.Second * 10)
 	for {
+		log.Print("Start of for loop")
 		startTime := time.Now()
-		//fmt.Println("Poll ftp")
-		conn := connectToFtp()
+		conn, err := connectToFtp()
+		if err != nil {
+			log.Print("FTP unavailable")
+			wait()
+			continue
+		}
 		files, err := conn.List("/")
-		handleError(err)
+		if err != nil {
+			log.Print("Unable to list files on FTP server")
+			wait()
+			continue
+		}
 
 		fileNames := make(chan string)
 
@@ -98,9 +127,13 @@ func main() {
 		fmt.Println()
 		conn.Logout()
 		conn.Quit()
-		time.Sleep(time.Minute)
+		wait()
 	}
 
+}
+
+func wait() {
+	time.Sleep(time.Minute * 1)
 }
 
 func webServer() {
@@ -121,8 +154,11 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func checkFtp() bool {
-	conn := connectToFtp()
-	_, err := conn.List("/")
+	conn, err := connectToFtp()
+	if conn != nil {
+		defer conn.Quit()
+		defer conn.Logout()
+	}
 	if err != nil {
 		log.Print("FTP healthcheck failed")
 	} else {
