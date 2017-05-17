@@ -21,18 +21,18 @@ func main() {
 		http.ListenAndServe(":8090", http.DefaultServeMux)
 	}()
 
-	for {
+	ticker := time.NewTicker(time.Minute * 1)
+	for t := range ticker.C {
+		log.Println("About to poll FTP ", t)
 		startTime := time.Now()
 		conn, err := connectToFtp()
 		if err != nil {
 			log.Print("FTP unavailable")
-			wait()
 			continue
 		}
 		files, err := conn.List("/")
 		if err != nil {
 			log.Print("Unable to list files on FTP server")
-			wait()
 			continue
 		}
 
@@ -53,8 +53,8 @@ func main() {
 		elapsed := time.Since(startTime)
 		log.Printf("Total time %s", elapsed)
 		conn.Quit()
-		wait()
 	}
+
 }
 
 type HealthCheck struct {
@@ -82,10 +82,6 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	w.Write(response)
-}
-
-func wait() {
-	time.Sleep(time.Minute * 1)
 }
 
 func processFiles(files <- chan string) {
