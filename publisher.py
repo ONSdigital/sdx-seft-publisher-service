@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 import ftplib
 from ftplib import FTP
-from multiprocessing import Pool
 from io import BytesIO
+import logging
+from multiprocessing import Pool
 import os
 
 import requests
+
+import settings
+
+logging.basicConfig(level=settings.LOGGING_LEVEL,
+                    format=settings.LOGGING_FORMAT)
 
 s = requests.Session()
 
@@ -15,10 +21,10 @@ def conn():
         ftp.connect(host='127.0.0.1', port=2121)
         ftp.login(user='ons', passwd='ons')
         return ftp
-    except ftplib.all_errors as e:
-        logger.print("Could not connect to ftp",
-        host=host,
-        port=port)
+    except (ftplib.all_errors, ConnectionRefusedError) as e:
+        logging.error("Could not connect to ftp",
+                     host=host,
+                     port=port)
 
 
 def retrieve_and_post(match):
@@ -37,8 +43,8 @@ def retrieve_and_post(match):
 
 def upload(binary_file, file_name):
     headers = headers={'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
-    r = requests.post('http://0.0.0.0:8080/upload/bres/1/{}'.format(file_name),
-                      files={'file': binary_file.getvalue()}, stream=True)
+    r = s.post('http://0.0.0.0:8080/upload/bres/1/{}'.format(file_name),
+                      files={'file': binary_file.getvalue()})
     binary_file.close()
     return r
 
@@ -55,6 +61,7 @@ def run():
 
     for task in tasks:
         task.get()
+
     pool.close()
     pool.join()
 

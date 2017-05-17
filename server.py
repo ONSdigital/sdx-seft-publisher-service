@@ -22,6 +22,7 @@ logger.info("START", version=__version__)
 scheduler = BackgroundScheduler()
 scheduler.start()
 
+
 scheduler.add_job(
     func=publisher.run,
     trigger=IntervalTrigger(seconds=5),
@@ -29,8 +30,6 @@ scheduler.add_job(
     name='Check FTP for files every 5 seconds',
     replace_existing=True)
 
-# Shut down the scheduler when exiting the app
-atexit.register(lambda: scheduler.shutdown(wait=False))
 
 @app.errorhandler(500)
 def ftp_error(e):
@@ -55,5 +54,9 @@ def healthcheck():
 
 
 if __name__ == '__main__':
-    port = int(os.getenv("PORT"))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    try:
+        port = int(os.getenv("PORT"))
+        app.run(debug=True, host='0.0.0.0', port=port)
+    except (KeyboardInterrupt, SystemExit):
+        # Not strictly necessary if daemonic mode is enabled but should be done if possible
+        scheduler.shutdown()
