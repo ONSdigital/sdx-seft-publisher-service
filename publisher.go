@@ -35,7 +35,7 @@ func main() {
 			log.Print("Unable to list files on FTP server")
 			continue
 		}
-
+		conn.Quit()
 		fileNames := make(chan string)
 
 		//fan out a 10 go rountines
@@ -52,7 +52,6 @@ func main() {
 		wg.Wait()
 		elapsed := time.Since(startTime)
 		log.Printf("Total time %s", elapsed)
-		conn.Quit()
 	}
 
 }
