@@ -10,7 +10,6 @@ import (
 	"sync"
 	"encoding/json"
 	"mime/multipart"
-	"os"
 	"io"
 	"strings"
 )
@@ -139,29 +138,25 @@ func postFileToRas(file string, buf *[]byte) ( bool) {
 	w := multipart.NewWriter(&b)
 	defer w.Close()
 
-	f, err := os.Open(file)
+	fw, err := w.CreateFormFile("files[]", file)
 	if err != nil {
-		return false
-	}
-	defer f.Close()
-
-
-	fw, err := w.CreateFormFile("files", file)
-	if err != nil {
+		log.Print("Failed to create form file", err)
 		return false
 	}
 
-	if _, err = io.Copy(fw, f); err != nil {
+	if _, err = io.Copy(fw, bytes.NewReader(*buf)); err != nil {
+		log.Print("Failed to copy file", err)
 		return false
 	}
+
+	resp, err := http.Post("http://ras-collection-instrument-demo.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/456/" + file,
+		"Content-Type:"+ w.FormDataContentType(), &b)
 
 	if err != nil {
 		log.Printf("Unable to send file %s to RAS", file)
 		return false
 	}
 
-	resp, err := http.Post("http://ras-collection-instrument-demo.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/456/" + file,
-		"Content-Type:"+ w.FormDataContentType(), &b)
 	result, _ := ioutil.ReadAll(resp.Body)
 	log.Printf("%s", result)
 
