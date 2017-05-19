@@ -9,6 +9,10 @@ import (
 	"bytes"
 	"sync"
 	"encoding/json"
+	"mime/multipart"
+	"os"
+	"io"
+	"strings"
 )
 
 var lock = &sync.Mutex{}
@@ -21,38 +25,40 @@ func main() {
 		http.ListenAndServe(":8090", http.DefaultServeMux)
 	}()
 
-	ticker := time.NewTicker(time.Minute * 1)
-	for t := range ticker.C {
-		log.Println("About to poll FTP ", t)
+	//ticker := time.NewTicker(time.Minute * 1)
+	//for t := range ticker.C {
+	//	log.Println("About to poll FTP ", t)
 		startTime := time.Now()
 		conn, err := connectToFtp()
 		if err != nil {
 			log.Print("FTP unavailable")
-			continue
+			//continue
 		}
 		files, err := conn.List("/")
 		if err != nil {
 			log.Print("Unable to list files on FTP server")
-			continue
+			//continue
 		}
 		conn.Quit()
 		fileNames := make(chan string)
 
 		//fan out a 10 go rountines
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 1; i++ {
 			wg.Add(1)
 			go processFiles(fileNames)
 		}
 
 		for _, file := range files {
-			fileNames <- file.Name
+			if strings.HasSuffix(file.Name, ".xlsx") {
+				fileNames <- file.Name
+			}
 		}
 
 		close(fileNames)
 		wg.Wait()
 		elapsed := time.Since(startTime)
 		log.Printf("Total time %s", elapsed)
-	}
+	//}
 
 }
 
@@ -112,6 +118,7 @@ func getFileFromFTP(file string, conn *ftp.ServerConn) ([]byte)  {
 	content, err := conn.Retr(file)
 	defer content.Close()
 	if err != nil {
+		log.Print(err)
 		log.Print("Unable to retrieve file")
 		return nil
 	}
@@ -126,15 +133,41 @@ func getFileFromFTP(file string, conn *ftp.ServerConn) ([]byte)  {
 
 
 func postFileToRas(file string, buf *[]byte) ( bool) {
-	resp, err := http.Post("http://localhost:8080/upload/bres/1/"+ file,
-		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-		bytes.NewReader(*buf))
+
+	// Prepare a form that you will submit to that URL.
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	defer w.Close()
+
+	f, err := os.Open(file)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+
+	fw, err := w.CreateFormFile("files", file)
+	if err != nil {
+		return false
+	}
+
+	if _, err = io.Copy(fw, f); err != nil {
+		return false
+	}
+
 	if err != nil {
 		log.Printf("Unable to send file %s to RAS", file)
 		return false
 	}
+
+	resp, err := http.Post("http://ras-collection-instrument-demo.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/456/" + file,
+		"Content-Type:"+ w.FormDataContentType(), &b)
+	result, _ := ioutil.ReadAll(resp.Body)
+	log.Printf("%s", result)
+
 	defer resp.Body.Close()
 	if  resp.StatusCode != http.StatusOK {
+
 		log.Printf("Failed to send file to RAS status code %s", resp.StatusCode)
 		return false
 	}
