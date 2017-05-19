@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"io"
 	"strings"
+	"fmt"
 )
 
 var lock = &sync.Mutex{}
@@ -42,7 +43,7 @@ func main() {
 		fileNames := make(chan string)
 
 		//fan out a 10 go rountines
-		for i := 0; i < 1; i++ {
+		for i := 0; i < 10; i++ {
 			wg.Add(1)
 			go processFiles(fileNames)
 		}
@@ -130,32 +131,47 @@ func getFileFromFTP(file string, conn *ftp.ServerConn) ([]byte)  {
 	return buf
 }
 
-
 func postFileToRas(file string, buf *[]byte) ( bool) {
 
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
-	defer w.Close()
 
 	fw, err := w.CreateFormFile("files[]", file)
 	if err != nil {
 		log.Print("Failed to create form file", err)
 		return false
 	}
-
 	if _, err = io.Copy(fw, bytes.NewReader(*buf)); err != nil {
 		log.Print("Failed to copy file", err)
 		return false
 	}
+	w.Close()
 
-	resp, err := http.Post("http://ras-collection-instrument-demo.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/456/" + file,
-		"Content-Type:"+ w.FormDataContentType(), &b)
+	// Now that you have a form, you can submit it to your handler.
+	req, err := http.NewRequest("POST", "http://ras-collection-instrument-demo.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/556/"+file, &b)
+	if err != nil {
+		log.Print(err)
+		return false
+	}
+	// Don't forget to set the content type, this will contain the boundary.
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	log.Print(formatRequest(req))
+	// Submit the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Print(err)
+		return false
+	}
+
 
 	if err != nil {
 		log.Printf("Unable to send file %s to RAS", file)
 		return false
 	}
+	log.Print(resp)
 
 	result, _ := ioutil.ReadAll(resp.Body)
 	log.Printf("%s", result)
@@ -169,6 +185,34 @@ func postFileToRas(file string, buf *[]byte) ( bool) {
 	return true
 
 }
+
+// formatRequest generates ascii representation of a request
+func formatRequest(r *http.Request) string {
+	// Create return string
+	var request []string
+	// Add the request string
+	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
+	request = append(request, url)
+	// Add the host
+	request = append(request, fmt.Sprintf("Host: %v", r.Host))
+	// Loop through headers
+	for name, headers := range r.Header {
+		name = strings.ToLower(name)
+		for _, h := range headers {
+			request = append(request, fmt.Sprintf("%v: %v", name, h))
+		}
+	}
+
+	// If this is a POST, add post data
+	if r.Method == "POST" {
+	r.ParseForm()
+	request = append(request, "\n")
+	request = append(request, r.Form.Encode())
+	}
+	// Return the request as a string
+	return strings.Join(request, "\n")
+}
+
 
 func connectToFtp() (*ftp.ServerConn, error) {
 	lock.Lock()
