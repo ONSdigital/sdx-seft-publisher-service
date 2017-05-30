@@ -24,7 +24,9 @@ func main() {
 
 	go func() {
 		http.HandleFunc("/healthcheck", healthCheck)
-		http.ListenAndServe(":8090", http.DefaultServeMux)
+		port := getEnvVar("PORT")
+		http.ListenAndServe(fmt.Sprintf(":%s", port), http.DefaultServeMux)
+
 	}()
 
 	//ticker := time.NewTicker(time.Minute * 1)
