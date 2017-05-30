@@ -1,18 +1,20 @@
 package main
 
 import (
-	"time"
-	"net/http"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
-	"github.com/jlaffaye/ftp"
-	"bytes"
-	"sync"
-	"encoding/json"
 	"mime/multipart"
-	"io"
+	"net/http"
+	"os"
 	"strings"
-	"fmt"
+	"sync"
+	"time"
+
+	"github.com/jlaffaye/ftp"
 )
 
 var lock = &sync.Mutex{}
@@ -28,45 +30,52 @@ func main() {
 	//ticker := time.NewTicker(time.Minute * 1)
 	//for t := range ticker.C {
 	//	log.Println("About to poll FTP ", t)
-		startTime := time.Now()
-		conn, err := connectToFtp()
-		if err != nil {
-			log.Print("FTP unavailable")
-			//continue
-		}
-		files, err := conn.List("/")
-		if err != nil {
-			log.Print("Unable to list files on FTP server")
-			//continue
-		}
-		conn.Quit()
-		fileNames := make(chan string)
+	startTime := time.Now()
+	conn, err := connectToFtp()
+	if err != nil {
+		log.Print("FTP unavailable")
+		//continue
+	}
+	files, err := conn.List("/")
+	if err != nil {
+		log.Print("Unable to list files on FTP server")
+		//continue
+	}
+	conn.Quit()
+	fileNames := make(chan string)
 
-		//fan out a 10 go rountines
-		for i := 0; i < 10; i++ {
-			wg.Add(1)
-			go processFiles(fileNames)
+	//fan out a 10 go rountines
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go processFiles(fileNames)
+	}
 
+	for _, file := range files {
+		if strings.HasSuffix(file.Name, ".xlsx") {
+			fileNames <- file.Name
 		}
+	}
 
-		for _, file := range files {
-			if strings.HasSuffix(file.Name, ".xlsx") {
-				fileNames <- file.Name
-			}
-		}
-
-		close(fileNames)
-		wg.Wait()
-		elapsed := time.Since(startTime)
-		log.Printf("Total time %s", elapsed)
+	close(fileNames)
+	wg.Wait()
+	elapsed := time.Since(startTime)
+	log.Printf("Total time %s", elapsed)
 	//}
 
 }
 
 type HealthCheck struct {
 	Status string
-	Ftp string
-	Ras string
+	Ftp    string
+	Ras    string
+}
+
+func getEnvVar(s string) string {
+	val, ok := os.LookupEnv(s)
+	if !ok {
+		log.Fatal(fmt.Sprintf("%s environment variable not set", s))
+	}
+	return val
 }
 
 func healthCheck(w http.ResponseWriter, _ *http.Request) {
@@ -90,7 +99,7 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 	w.Write(response)
 }
 
-func processFiles(files <- chan string) {
+func processFiles(files <-chan string) {
 	defer wg.Done()
 	conn, err := connectToFtp()
 	if err != nil {
@@ -114,8 +123,7 @@ func deleteFileOnFTP(conn *ftp.ServerConn, file string) {
 	}
 }
 
-
-func getFileFromFTP(file string, conn *ftp.ServerConn) ([]byte)  {
+func getFileFromFTP(file string, conn *ftp.ServerConn) []byte {
 	content, err := conn.Retr(file)
 	defer content.Close()
 	if err != nil {
@@ -132,7 +140,7 @@ func getFileFromFTP(file string, conn *ftp.ServerConn) ([]byte)  {
 	return buf
 }
 
-func postFileToRas(file string, buf *[]byte) ( bool) {
+func postFileToRas(file string, buf *[]byte) bool {
 
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
@@ -167,7 +175,6 @@ func postFileToRas(file string, buf *[]byte) ( bool) {
 		return false
 	}
 
-
 	if err != nil {
 		log.Printf("Unable to send file %s to RAS", file)
 		return false
@@ -178,7 +185,7 @@ func postFileToRas(file string, buf *[]byte) ( bool) {
 	log.Printf("%s", result)
 
 	defer resp.Body.Close()
-	if  resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK {
 
 		log.Printf("Failed to send file to RAS status code %s", resp.StatusCode)
 		return false
@@ -206,27 +213,27 @@ func formatRequest(r *http.Request) string {
 
 	// If this is a POST, add post data
 	if r.Method == "POST" {
-	r.ParseForm()
-	request = append(request, "\n")
-	request = append(request, r.Form.Encode())
+		r.ParseForm()
+		request = append(request, "\n")
+		request = append(request, r.Form.Encode())
 	}
 	// Return the request as a string
 	return strings.Join(request, "\n")
 }
 
-
 func connectToFtp() (*ftp.ServerConn, error) {
 	lock.Lock()
 	defer lock.Unlock()
-	conn, err := ftp.Connect("localhost:2021")
+	ftpHost := getEnvVar("ftp_host")
+	ftpPort := getEnvVar("ftp_port")
+	conn, err := ftp.Connect(fmt.Sprintf("%s:%s", ftpHost, ftpPort))
 	if err != nil {
 		log.Print(err)
 		return nil, err
 	}
-	conn.Login("ons", "ons")
+	conn.Login("sdx", "s3cr3t")
 	return conn, err
 }
-
 
 func checkFtp() bool {
 	conn, err := connectToFtp()
@@ -244,7 +251,7 @@ func checkRas() bool {
 	resp, err := http.Head("http://localhost:8080/healthcheck")
 	if err != nil || resp.StatusCode != http.StatusOK {
 		log.Print("RAS healthcheck failed")
-	} else{
+	} else {
 		log.Print("RAS healthcheck successful")
 	}
 	return resp.StatusCode == http.StatusOK
