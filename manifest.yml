@@ -4,3 +4,6 @@ applications:
     env:
       GOVERSION: go1.8
       GOPACKAGENAME: github.com/ONSdigital/sdx-spike/sdx-seft-publisher-service
+      FTPHOST: 52.15.106.54
+      FTPPORT: 21
+

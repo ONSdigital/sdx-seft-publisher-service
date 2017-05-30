@@ -224,8 +224,8 @@ func formatRequest(r *http.Request) string {
 func connectToFtp() (*ftp.ServerConn, error) {
 	lock.Lock()
 	defer lock.Unlock()
-	ftpHost := getEnvVar("ftp_host")
-	ftpPort := getEnvVar("ftp_port")
+	ftpHost := getEnvVar("FTPHOST")
+	ftpPort := getEnvVar("FTPPORT")
 	conn, err := ftp.Connect(fmt.Sprintf("%s:%s", ftpHost, ftpPort))
 	if err != nil {
 		log.Print(err)
