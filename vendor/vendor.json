@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "5q6J/Mba+2ZfrMqzp/QuKSjWalo=",
+			"path": "github.com/jlaffaye/ftp",
+			"revision": "5c7b901224c7880b293e0b5486cb6ebf97bfca37",
+			"revisionTime": "2017-05-07T18:23:38Z"
+		}
+	],
+	"rootPath": "github.com/ONSdigital/sdx-seft-publisher-service"
+}

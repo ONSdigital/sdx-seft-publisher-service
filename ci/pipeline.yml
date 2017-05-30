@@ -1,0 +1,30 @@
+resources:
+- name: sdx-seft-publisher-service
+  type: git
+  source:
+    uri: git@github.com:ONSDigital/sdx-seft-publisher-service
+    branch: spike/go-spike-real-ras
+    private_key: {{github_private_key}}
+
+- name: ci
+  type: cf
+  source:
+    api: {{cf_api_url}}
+    username: {{cf_username}}
+    password: {{cf_password}}
+    organization: {{cf_organisation}}
+    space: {{cf_space}}
+    skip_cert_check: true
+
+
+jobs:
+- name: simple-test-and-deploy
+  plan:
+  - get: sdx-seft-publisher-service
+    trigger: true
+  - task: tests
+    file: sdx-seft-publisher-service/ci/build.yml
+  - put: cf-deploy
+    params:
+      manifest: sdx-seft-publisher-service/manifest.yml
+      path: sdx-seft-publisher-service/ci

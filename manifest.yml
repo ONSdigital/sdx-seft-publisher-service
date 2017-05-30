@@ -1,0 +1,6 @@
+---
+applications:
+  - name: sdx-seft-publisher-service
+    env:
+      GOVERSION: go1.8
+      GOPACKAGENAME: github.com/ONSdigital/sdx-spike/sdx-seft-publisher-service
