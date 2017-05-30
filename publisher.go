@@ -46,6 +46,7 @@ func main() {
 		for i := 0; i < 10; i++ {
 			wg.Add(1)
 			go processFiles(fileNames)
+
 		}
 
 		for _, file := range files {
@@ -149,7 +150,7 @@ func postFileToRas(file string, buf *[]byte) ( bool) {
 	w.Close()
 
 	// Now that you have a form, you can submit it to your handler.
-	req, err := http.NewRequest("POST", "http://ras-collection-instrument-demo.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/556/"+file, &b)
+	req, err := http.NewRequest("POST", "http://ras-collection-instrument-dev.apps.mvp.onsclofo.uk/collection-instrument-api/1.0.2/upload/0282bdf5-51a0-4164-a4c8-b534f7b63ae2/"+file, &b)
 	if err != nil {
 		log.Print(err)
 		return false
