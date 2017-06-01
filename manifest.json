@@ -1,0 +1,8 @@
+
+{
+    "dependencies": {
+        "github.com/jlaffaye/ftp": {
+            "branch": "master"
+        }
+    }
+}
