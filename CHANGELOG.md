@@ -1,1 +1,2 @@
-### Unlreleased
+### Unreleased
+  - Add codacy badge
