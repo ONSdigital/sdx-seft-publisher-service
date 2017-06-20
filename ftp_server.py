@@ -22,7 +22,7 @@ def main():
     authorizer.add_user('ons', 'ons', '.', perm='elradfmwM')
     handler = FTPHandler
     handler.authorizer = authorizer
-    server = MultiprocessFTPServer(('127.0.0.1', 2121), handler)
+    server = MultiprocessFTPServer(('127.0.0.1', 2122), handler)
     server.serve_forever()
 
 
