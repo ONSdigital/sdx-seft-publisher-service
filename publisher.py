@@ -1,26 +1,22 @@
 import asyncio
-import os
 import logging
+import os
 
 import aioftp
+from aioftp.errors import StatusCodeError
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError
 from aiohttp import StreamReader
+from sdx.common.logger_config import logger_initial_config
 from structlog import wrap_logger
 import uvloop
 
 import settings
 
 
-logging.basicConfig(level=settings.LOGGING_LEVEL,
-                    format=settings.LOGGING_FORMAT,
-                    datefmt=settings.DATE_FORMAT)
-logger = wrap_logger(logging.getLogger(__name__))
-
-
 class Publisher:
 
-    def __init__(self, logger, host, port, login, password):
+    def __init__(self, logger, host, port, login, password, ras_url):
         self.logger = logger
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.get_event_loop()
@@ -29,11 +25,7 @@ class Publisher:
         self.port = port
         self.login = login
         self.password = password
-        self.ras_url = settings.RAS_URL
-
-    def get_ftp_client(self):
-        client = aioftp.ClientSession(self.host, self.port, self.login, self.password)
-        return client
+        self.ras_url = ras_url
 
     def post_data(self, session, fn, block):
         self.logger.info("Posting data to " + self.ras_url + fn)
@@ -51,34 +43,49 @@ class Publisher:
 
     async def poll_ftp(self):
         self.logger.info("Connecting to FTP")
-        async with self.get_ftp_client() as ftp_client:
+        client = aioftp.ClientSession(self.host, self.port, self.login, self.password)
+        async with client as ftp_client:
             self.logger.info("Connecting to http_session")
-            async with aiohttp.ClientSession(connector=self.conn) as http_session:
+            session = aiohttp.ClientSession(connector=self.conn)
+            async with session as http_session:
+                failed = []
                 for path, info in (await ftp_client.list(recursive=True)):
                     if path.suffix == ".xlsx":
                         resp = await self.publish(ftp_client, path, http_session)
-                        failed = []
                         if resp == 200:
                             await ftp_client.remove_file(path)
                         else:
                             failed.append(path)
+                if len(failed) > 0:
+                    self.logger.error("Some files were not transferred.", files=failed)
 
     def start(self):
         self.logger.info("Starting publisher")
         try:
             self.loop.run_until_complete(self.poll_ftp())
         except ConnectionRefusedError as e:
-            self.logger.error("A connection has failed", error=e)
+            self.logger.error("Could not connect to FTP. Closing loop.", error=e)
+            self.loop.stop()
+        except StatusCodeError as e:
+            self.logger.error("Failed FTP authentication. Closing loop.", error=e)
             self.loop.stop()
         except ClientConnectorError as e:
-            self.logger.error("A connection has failed", error=e)
+            self.logger.error("Could not connect to RAS. Closing loop.", error=e)
             self.loop.stop()
-        finally:
+        else:
             self.logger.info("All files transferred")
 
 
 def main():
-    publisher = Publisher(logger, "127.0.0.1", 2122, "ons", "ons")
+    logger_initial_config(service_name="sdx-seft-publisher-service")
+    logger = wrap_logger(logging.getLogger(__name__))
+
+    publisher = Publisher(logger,
+                          settings.FTP_HOST,
+                          settings.FTP_PORT,
+                          settings.FTP_LOGIN,
+                          settings.FTP_PASSWORD,
+                          settings.RAS_URL)
     publisher.start()
 
 
