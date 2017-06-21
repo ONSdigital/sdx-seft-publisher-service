@@ -5,9 +5,9 @@
 The service accesses files in an FTP server then sends them on to a given endpoint.
 
 ## Installation
-Carry out the following inside a python virtual Environment
+Carry out the following inside a python virtual Environment from the respository
 
-To inside requirements.txt, including the sdx-common library pulled from github:
+To install the dependencies in requirements.txt, including the sdx-common library pulled from github:
 
     $ make build
 
@@ -15,7 +15,7 @@ If you wish to use a local version of sdx-common use pip from it's Location:
 
     $ pip install ./sdx-common
 
-Or if you have the `SDX_HOME` environment set and both sdx-seft-publisher-service and sdx-common are in that location you can run to install your local version:
+Or if you have the `SDX_HOME` environment variable set and both sdx-seft-publisher-service and sdx-common are in that location, you can run the following to install your local version:
 
     $ make dev
 
@@ -37,9 +37,9 @@ To run the dummy RAS endpoint:
 
     $ make ftp_server
 
-### Testings
+### Testing
 
-Run flake8 and the test scripts with
+To run flake8 and the test scripts:
 
     $ make test
 
