@@ -20,7 +20,7 @@ def post_file(survey, ce, filename):
 
 @app.route('/list', methods=['GET'])
 def list_files():
-    return jsonify({'name' :'file1'})
+    return jsonify({'name': 'file1'})
 
 
 if __name__ == '__main__':

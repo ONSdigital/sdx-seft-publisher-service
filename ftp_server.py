@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 # Copyright (C) 2007 Giampaolo Rodola' <g.rodola@gmail.com>.

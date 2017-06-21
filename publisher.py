@@ -6,7 +6,6 @@ import aioftp
 from aioftp.errors import StatusCodeError
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError
-from aiohttp import StreamReader
 from sdx.common.logger_config import logger_initial_config
 from structlog import wrap_logger
 import uvloop

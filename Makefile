@@ -16,6 +16,10 @@ ifeq ($(SDX_HOME),)
 	$(error SDX_HOME is not set)
 endif
 
+test:
+	pip3 install -I -r test_requirements.txt
+	flake8
+
 ftp_server:
 	python ftp_server.py
 
