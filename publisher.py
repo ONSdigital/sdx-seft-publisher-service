@@ -56,7 +56,6 @@ class Publisher:
                 raise PublishError
 
     async def publish(self, ftp_client, file_path, session):
-        self.logger.info("Publishing file to RAS", file_path=file_path)
         fn = os.path.basename(file_path)
         logger.info("Retrieving file from FTP", file_path=file_path)
         async with ftp_client.download_stream(file_path) as ftp_stream:
@@ -69,7 +68,7 @@ class Publisher:
         session = aiohttp.ClientSession(connector=self.conn)
         self.logger.info("Connecting to FTP")
         async with client as ftp_client:
-            self.logger.info("Connecting to http_session")
+            self.logger.info("Connecting to http session")
             async with session as http_session:
                 self.logger.info("Getting file paths from FTP")
                 for path, info in (await ftp_client.list(recursive=False)):
@@ -80,19 +79,19 @@ class Publisher:
         try:
             self.loop.run_until_complete(self.poll_ftp())
         except ConnectionRefusedError as e:
-            self.logger.error("Could not connect to FTP. Closing loop.", error=e)
+            self.logger.error("Could not connect to FTP. Closing loop", error=e)
             self.loop.stop()
         except StatusCodeError as e:
-            self.logger.error("Failed FTP authentication. Closing loop.", error=e)
+            self.logger.error("Failed FTP authentication. Closing loop", error=e)
             self.loop.stop()
         except ClientConnectorError as e:
-            self.logger.error("Could not connect to RAS. Closing loop.", error=e)
+            self.logger.error("Could not connect to RAS. Closing loop", error=e)
             self.loop.stop()
         except PublishError as e:
-            self.logger.error("Some files have failed to publish.", error=e)
+            self.logger.error("Some files have failed to publish", error=e)
             self.loop.stop()
         except Exception as e:
-            self.logger.error("Other error.", error=e)
+            self.logger.error("An Exception occurred", error=e)
             self.loop.stop()
         else:
             self.logger.info("All files transferred")
@@ -111,7 +110,7 @@ def get_default_publisher(logger):
 
 
 def main():
-    logger.info("Start")
+    logger.info("Start", version=__version__)
     publisher = get_default_publisher(logger)
     publisher.start()
 

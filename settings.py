@@ -3,7 +3,6 @@ import os
 
 
 LOGGING_LEVEL = logging.getLevelName(os.getenv('LOGGING_LEVEL', 'INFO'))
-DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 FTP_HOST = os.getenv('FTP_HOST', "127.0.0.1")
 FTP_PORT = os.getenv('FTP_PORT', 2123)
