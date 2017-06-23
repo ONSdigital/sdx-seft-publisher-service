@@ -70,12 +70,6 @@ The following envioronment variables can be set:
 | RAS_URL                   | ``http://localhost:8080/upload/bres/1/``| Base URL to send files to
 | RETRIEVED_FILE_TYPES      | ``['.xlsx', '.png']``                   | File types that will be retrieved from the FTP
 
-
-
-### Contributing
-
-See [CONTRIBUTING](CONTRIBUTING) for details.
-
 ### License
 
 Copyright ©‎ 2016, Office for National Statistics (https://www.ons.gov.uk)
