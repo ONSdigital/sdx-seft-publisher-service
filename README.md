@@ -1,5 +1,7 @@
 # sdx-seft-publisher-service
 
+[![Build Status](https://travis-ci.org/ONSdigital/sdx-seft-publisher-service.svg?branch=master)](https://travis-ci.org/ONSdigital/sdx-seft-publisher-service) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/475f9da4585c411fbbc1ac803ce2baf5)](https://www.codacy.com/app/ons-sdc/sdx-seft-publisher-service?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ONSdigital/sdx-seft-publisher-service&amp;utm_campaign=Badge_Grade)
+
 ``sdx-seft-publisher-service`` is a microservice for publishing SEFT files from an internal file location to RAS (Respondent Accounts Service).
 
 The service accesses files in an FTP server then sends them on to a given endpoint.
@@ -67,11 +69,6 @@ The following envioronment variables can be set:
 | FTP_PASSWORD              | ``ons``                                 | Password for FTP server
 | RAS_URL                   | ``http://localhost:8080/upload/bres/1/``| Base URL to send files to
 | RETRIEVED_FILE_TYPES      | ``['.xlsx', '.png']``                   | File types that will be retrieved from the FTP
-
-
-### Contributing
-
-See [CONTRIBUTING](CONTRIBUTING) for details.
 
 ### License
 
