@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 
@@ -6,6 +5,7 @@ import aioftp
 from aioftp.errors import StatusCodeError
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError
+import asyncio
 from sdx.common.logger_config import logger_initial_config
 from structlog import wrap_logger
 import uvloop
@@ -13,9 +13,20 @@ import uvloop
 import settings
 
 
+__version__ = "0.1.0"
+
+
+logger_initial_config(service_name="sdx-seft-publisher-service")
+logger = wrap_logger(logging.getLogger(__name__))
+
+
+class PublishError(Exception):
+    pass
+
+
 class Publisher:
 
-    def __init__(self, logger, host, port, login, password, ras_url):
+    def __init__(self, logger, host, port, login, password, ras_url, retrieved_file_types):
         self.logger = logger
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.get_event_loop()
@@ -25,38 +36,44 @@ class Publisher:
         self.login = login
         self.password = password
         self.ras_url = ras_url
+        self.retrieved_file_types = retrieved_file_types
 
     def post_data(self, session, fn, block):
         self.logger.info("Posting data to " + self.ras_url + fn)
         response = session.post(self.ras_url + fn, data=block)
-        self.logger.info("File sent to RAS")
         return response
 
+    async def publish_remove_files(self, path, ftp_client, http_session):
+        if path.suffix in [self.retrieved_file_types]:
+            resp = await self.publish(ftp_client, path, http_session)
+            if resp == 200:
+                self.logger.info("File Published", file_path=path)
+                self.logger.info("Deleting file from FTP", file_path=path)
+                await ftp_client.remove_file(path)
+                return None
+            else:
+                self.logger.error("Failed to publish file", file_path=path)
+                raise PublishError
+
     async def publish(self, ftp_client, file_path, session):
-        self.logger.info("Publishing all messages from ftp")
+        self.logger.info("Publishing file to RAS", file_path=file_path)
         fn = os.path.basename(file_path)
+        logger.info("Retrieving file from FTP", file_path=file_path)
         async with ftp_client.download_stream(file_path) as ftp_stream:
             async for block in ftp_stream.iter_by_block():
                 async with self.post_data(session, fn, block) as resp:
                     return resp.status
 
     async def poll_ftp(self):
-        self.logger.info("Connecting to FTP")
         client = aioftp.ClientSession(self.host, self.port, self.login, self.password)
+        session = aiohttp.ClientSession(connector=self.conn)
+        self.logger.info("Connecting to FTP")
         async with client as ftp_client:
             self.logger.info("Connecting to http_session")
-            session = aiohttp.ClientSession(connector=self.conn)
             async with session as http_session:
-                failed = []
-                for path, info in (await ftp_client.list(recursive=True)):
-                    if path.suffix == ".xlsx":
-                        resp = await self.publish(ftp_client, path, http_session)
-                        if resp == 200:
-                            await ftp_client.remove_file(path)
-                        else:
-                            failed.append(path)
-                if len(failed) > 0:
-                    self.logger.error("Some files were not transferred.", files=failed)
+                self.logger.info("Getting file paths from FTP")
+                for path, info in (await ftp_client.list(recursive=False)):
+                    await self.publish_remove_files(path, ftp_client, http_session)
 
     def start(self):
         self.logger.info("Starting publisher")
@@ -71,20 +88,31 @@ class Publisher:
         except ClientConnectorError as e:
             self.logger.error("Could not connect to RAS. Closing loop.", error=e)
             self.loop.stop()
+        except PublishError as e:
+            self.logger.error("Some files have failed to publish.", error=e)
+            self.loop.stop()
+        except Exception as e:
+            self.logger.error("Other error.", error=e)
+            self.loop.stop()
         else:
             self.logger.info("All files transferred")
 
 
-def main():
-    logger_initial_config(service_name="sdx-seft-publisher-service")
-    logger = wrap_logger(logging.getLogger(__name__))
-
+def get_default_publisher(logger):
+    logger.info("Creating publisher")
     publisher = Publisher(logger,
                           settings.FTP_HOST,
                           settings.FTP_PORT,
                           settings.FTP_LOGIN,
                           settings.FTP_PASSWORD,
-                          settings.RAS_URL)
+                          settings.RAS_URL,
+                          settings.RETRIEVED_FILE_TYPES)
+    return publisher
+
+
+def main():
+    logger.info("Start")
+    publisher = get_default_publisher(logger)
     publisher.start()
 
 

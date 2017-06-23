@@ -1,8 +1,8 @@
 aioftp==0.7.0
-aiohttp==2.1.0
+aiohttp==2.2.0
+asyncio==3.4.3
 Flask==0.12.2
 pyftpdlib==1.5.2
-requests==2.12.4
 sdx-common==0.5.1
 structlog==16.1.0
 uvloop==0.8.0

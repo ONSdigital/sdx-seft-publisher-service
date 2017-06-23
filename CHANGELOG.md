@@ -1,2 +1,2 @@
 ### Unlreleased
-  - Added capabilities to pull files from an FTP and send to a endpoint(RAS)
+  - Script which asynchronously collects and deletes files from an FTP server and Posts them to an endpoint

@@ -5,7 +5,7 @@
 The service accesses files in an FTP server then sends them on to a given endpoint.
 
 ## Installation
-Carry out the following inside a python virtual Environment from the respository
+Carry out the following inside a python virtual Environment from inside this respository
 
 To install the dependencies in requirements.txt, including the sdx-common library pulled from github:
 
@@ -15,7 +15,7 @@ If you wish to use a local version of sdx-common use pip from it's location:
 
     $ pip install -I ./sdx-common
 
-Or if you have the `SDX_HOME` environment variable set and both sdx-seft-publisher-service and sdx-common are in that location, you can run the following to install your local version:
+OR if you have the `SDX_HOME` environment variable set and both sdx-seft-publisher-service and sdx-common are in that location, you can run the following to install your local version:
 
     $ make dev
 
@@ -43,6 +43,12 @@ The dummy RAS is hosted at `'0.0.0.0'` on port 8080.
 
 The only useful endpoint is at `'/upload/<survey>/<ce>/<filename>'` which is where publisher sends it's files by default
 
+### Dummy Data
+
+To generate dummy data for the publisher to use
+
+  $ make false_data
+
 ### Testing
 
 To run flake8 and the test scripts:
@@ -60,7 +66,7 @@ The following envioronment variables can be set:
 | FTP_LOGIN                 | ``ons``                                 | Login for FTP server
 | FTP_PASSWORD              | ``ons``                                 | Password for FTP server
 | RAS_URL                   | ``http://localhost:8080/upload/bres/1/``| Base URL to send files to
-
+| RETRIEVED_FILE_TYPES      | ``['.xlsx', '.png']``                   | File types that will be retrieved from the FTP
 
 
 ### Contributing

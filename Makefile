@@ -11,17 +11,21 @@ build:
 start:
 	python publisher.py
 
-check-env:
-ifeq ($(SDX_HOME),)
-	$(error SDX_HOME is not set)
-endif
-
 test:
 	pip3 install -I -r test_requirements.txt
 	flake8
+	python -m unittest tests/*.py
 
 ftp_server:
 	python ftp_server.py
 
 fake_ras:
 	python fake_ras.py
+
+false_data:
+	cd dummy_data && python make_data.py
+
+check-env:
+ifeq ($(SDX_HOME),)
+	$(error SDX_HOME is not set)
+endif
