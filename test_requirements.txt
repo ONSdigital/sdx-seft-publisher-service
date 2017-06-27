@@ -1,0 +1,2 @@
+flake8==2.6.0
+asynctest==0.10.0
