@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 
@@ -6,7 +7,9 @@ from aioftp.errors import StatusCodeError
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError
 import asyncio
+from collections import Sequence
 from sdx.common.logger_config import logger_initial_config
+from shutil import copyfile
 from structlog import wrap_logger
 import uvloop
 
@@ -38,14 +41,27 @@ class Publisher:
         self.ras_url = ras_url
         self.retrieved_file_types = retrieved_file_types
 
-    def post_data(self, session, fn, block):
+    def post_data(self, session, fn, block, file_path):
+
         self.logger.info("Posting data to " + self.ras_url + fn)
-        response = session.post(self.ras_url + fn, data=block)
+        with aiohttp.MultipartWriter('form-data') as mpwriter:
+            self.logger.info("testtest 1")
+            headers={"CONTENT-TYPE": "formdata",
+                     "CONTENT_ENCODING": "identity",
+                     "CONTENT_TRANSFER_ENCODING": "binary"}
+                                 payload["headers"] = headers
+            mpwriter.append_payload(payload)
+            mpwriter.parts[1].set_content_disposition(distype='formData', params=params)
+            self.logger.info("testtest 2")
+            headers = {"Content-Type": mpwriter.headers["CONTENT-TYPE"]}
+            response = session.post(self.ras_url + fn, data=mpwriter, headers=headers)
+            self.logger.info("testtest 3")
         return response
 
     async def publish_remove_files(self, path, ftp_client, http_session):
         if path.suffix in [self.retrieved_file_types]:
             resp = await self.publish(ftp_client, path, http_session)
+            logger.info("testtest " + str(resp))
             if resp == 200:
                 self.logger.info("File Published", file_path=path)
                 self.logger.info("Deleting file from FTP", file_path=path)
@@ -60,8 +76,8 @@ class Publisher:
         logger.info("Retrieving file from FTP", file_path=file_path)
         async with ftp_client.download_stream(file_path) as ftp_stream:
             async for block in ftp_stream.iter_by_block():
-                async with self.post_data(session, fn, block) as resp:
-                    return resp.status
+                async with self.post_data(session, fn, block, file_path) as resp:
+                    return resp
 
     async def poll_ftp(self):
         client = aioftp.ClientSession(self.host, self.port, self.login, self.password)
@@ -71,7 +87,7 @@ class Publisher:
             self.logger.info("Connecting to http session")
             async with session as http_session:
                 self.logger.info("Getting file paths from FTP")
-                for path, info in (await ftp_client.list(recursive=False)):
+                for path, info in (await ftp_client.list(recursive=True)):
                     await self.publish_remove_files(path, ftp_client, http_session)
 
     def start(self):

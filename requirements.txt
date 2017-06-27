@@ -3,6 +3,6 @@ aiohttp==2.2.0
 asyncio==3.4.3
 Flask==0.12.2
 pyftpdlib==1.5.2
-sdx-common==0.5.1
+
 structlog==16.1.0
 uvloop==0.8.0
