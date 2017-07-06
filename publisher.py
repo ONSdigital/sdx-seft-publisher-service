@@ -6,10 +6,9 @@ class ExamplePublisher:
     EXCHANGE = "message"
     EXCHANGE_TYPE = "topic"
     PUBLISH_INTERVAL = 1
-    QUEUE = "text"
     ROUTING_KEY = "example.text"
 
-    def __init__(self, amqp_url, log=None):
+    def __init__(self, amqp_url, queue_name, log=None):
         self.log = log or logging.getLogger("sdx")
         self._connection = None
         self._channel = None
@@ -87,16 +86,16 @@ class ExamplePublisher:
 
     def on_exchange_declareok(self, unused_frame):
         self.log.info("Exchange declared")
-        self.setup_queue(self.QUEUE)
+        self.setup_queue(self.queue_name)
 
     def setup_queue(self, queue_name):
         self.log.info("Declaring queue %s", queue_name)
-        self._channel.queue_declare(self.on_queue_declareok, queue_name)
+        self._channel.queue_declare(self.on_queue_declareok, queue_name, durable=True)
 
     def on_queue_declareok(self, method_frame):
         self.log.info("Binding %s to %s with %s",
-                    self.EXCHANGE, self.QUEUE, self.ROUTING_KEY)
-        self._channel.queue_bind(self.on_bindok, self.QUEUE,
+                    self.EXCHANGE, self.queue_name, self.ROUTING_KEY)
+        self._channel.queue_bind(self.on_bindok, self.queue_name,
                                  self.EXCHANGE, self.ROUTING_KEY)
 
     def on_bindok(self, unused_frame):
@@ -183,7 +182,10 @@ def main():
     logging.basicConfig(level=logging.DEBUG, format=log_format)
 
     # Connect to localhost:5672 as guest with the password guest and virtual host "/" (%2F)
-    example = ExamplePublisher("amqp://guest:guest@localhost:5672/%2F?connection_attempts=3&heartbeat_interval=3600")
+    example = ExamplePublisher(
+        "amqp://guest:guest@localhost:5672/%2F?connection_attempts=3&heartbeat_interval=3600",
+        "test"
+    )
     try:
         example.run()
     except KeyboardInterrupt:
