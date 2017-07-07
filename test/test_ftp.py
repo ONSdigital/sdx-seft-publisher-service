@@ -2,9 +2,17 @@
 
 import os
 import multiprocessing
+import random
 import shutil
+import sys
 import tempfile
+import time
 import unittest
+
+# To run test in CF
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+import test.localserver
 
 class NeedsTemporaryDirectory():
 
@@ -20,9 +28,14 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.files = [tempfile.mkstemp(suffix=".xls", dir=self.root)] * 10
-        print(self.files)
-            
+        self.files = {
+            tempfile.mkstemp(suffix=".xls", dir=self.root): os.urandom(random.randint(1024, 4049))
+            for i in range(12)
+        }
+        for (fd, path), content in self.files.items():
+            os.write(fd, content)
+            os.close(fd)
+
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server(self):
         server = multiprocessing.Process(
@@ -31,14 +44,13 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         )
         server.start()
         time.sleep(5)
-        with zipfile.ZipFile(self.buf) as payload:
-            for item in transfer(
-                payload,
-                host="0.0.0.0", port=22000,
-                user="testuser", password="",
-                root="test"
-            ):
-                print("transferred ", item)
+        for item in transfer(
+            payload,
+            host="0.0.0.0", port=22000,
+            user="testuser", password="",
+            root="test"
+        ):
+            print("transferred ", item)
 
         self.assertEqual(
             3,
@@ -68,14 +80,13 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         )
         server.start()
         time.sleep(5)
-        with zipfile.ZipFile(self.buf) as payload:
-            for item in transfer(
-                payload,
-                host="0.0.0.0", port=22000,
-                user="testuser", password="",
-                root="test"
-            ):
-                print("transferred ", item)
+        for item in transfer(
+            payload,
+            host="0.0.0.0", port=22000,
+            user="testuser", password="",
+            root="test"
+        ):
+            print("transferred ", item)
 
         self.assertEqual(
             3,
