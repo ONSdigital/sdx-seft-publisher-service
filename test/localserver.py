@@ -1,5 +1,6 @@
 import argparse
 import logging
+import tempfile
 import sys
 
 from pyftpdlib.handlers import FTPHandler
@@ -10,7 +11,7 @@ from pyftpdlib.authorizers import DummyAuthorizer
 class MyHandler(FTPHandler):
 
     def on_connect(self):
-        print "%s:%s connected" % (self.remote_ip, self.remote_port)
+        print("{0}:{1} connected").format(self.remote_ip, self.remote_port)
 
     def on_disconnect(self):
         # do something when client disconnects
