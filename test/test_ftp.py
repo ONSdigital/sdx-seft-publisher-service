@@ -12,6 +12,7 @@ import unittest
 # To run test in CF
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from ftpclient import transfer
 import test.localserver
 
 class NeedsTemporaryDirectory():
@@ -45,31 +46,12 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         server.start()
         time.sleep(5)
         for item in transfer(
-            payload,
             host="0.0.0.0", port=22000,
             user="testuser", password="",
             root="test"
         ):
             print("transferred ", item)
 
-        self.assertEqual(
-            3,
-            len(glob.glob(os.path.join(
-                self.root, "data", "*",
-            )))
-        )
-        self.assertEqual(
-            4,
-            len(glob.glob(os.path.join(
-                self.root, "data", "sftpzip", "*"
-            )))
-        )
-        self.assertEqual(
-            2,
-            len(glob.glob(os.path.join(
-                self.root, "data", "sftpzip", "test", "*"
-            )))
-        )
         server.terminate()
 
     @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
@@ -81,31 +63,12 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         server.start()
         time.sleep(5)
         for item in transfer(
-            payload,
             host="0.0.0.0", port=22000,
             user="testuser", password="",
             root="test"
         ):
             print("transferred ", item)
 
-        self.assertEqual(
-            3,
-            len(glob.glob(os.path.join(
-                self.root, "data", "*", "sdx-spike", "*"
-            )))
-        )
-        self.assertEqual(
-            4,
-            len(glob.glob(os.path.join(
-                self.root, "data", "*", "sdx-spike", "sftpzip", "*"
-            )))
-        )
-        self.assertEqual(
-            2,
-            len(glob.glob(os.path.join(
-                self.root, "data", "*", "sdx-spike", "sftpzip", "test", "*"
-            )))
-        )
         server.terminate()
 
 if __name__ == "__main__":
