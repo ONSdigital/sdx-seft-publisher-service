@@ -12,7 +12,7 @@ import unittest
 # To run test in CF
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from ftpclient import transfer
+from ftpclient import FTPWorker
 import test.localserver
 
 class NeedsTemporaryDirectory():
@@ -53,8 +53,11 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         )
         server.start()
         time.sleep(5)
-        for item in transfer(root=self.root, **self.params):
-            print("transferred ", item)
+        worker = FTPWorker(**self.params)
+        with worker as active:
+            items = set(i.contents for i in active.get(active.jobs))
+            self.assertEqual(len(self.files), len(items))
+            self.assertEqual(set(self.files.values()), items)
 
         server.terminate()
 
@@ -67,8 +70,11 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         )
         server.start()
         time.sleep(5)
-        for item in transfer(root=self.root, **self.params):
-            print("transferred ", item)
+        worker = FTPWorker(**self.params)
+        with worker as active:
+            items = set(i.contents for i in active.get(active.jobs))
+            self.assertEqual(len(self.files), len(items))
+            self.assertEqual(set(self.files.values()), items)
 
         server.terminate()
 

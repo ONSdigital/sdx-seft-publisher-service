@@ -1,14 +1,7 @@
-from collections import deque
-from collections import namedtuple
-import datetime
-
 import tornado.ioloop
 import tornado.web
 
-class Work:
-
-    Item = namedtuple("Item", ["ts", "tx_id"])
-    recent = deque(maxlen=24)
+from publisher import Work
 
 class StatusService(tornado.web.RequestHandler):
 
@@ -28,4 +21,7 @@ if __name__ == "__main__":
     Work.recent.append(Work.Item(datetime.datetime.now().isoformat(), "b" * 32))
     app = make_app()
     app.listen(8888)
+    sched = tornado.ioloop.PeriodicCallback(schedule_func,interval_ms, io_loop = main_loop)
+    #start your period timer
+    sched.start()
     tornado.ioloop.IOLoop.current().start()

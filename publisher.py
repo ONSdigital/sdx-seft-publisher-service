@@ -1,6 +1,14 @@
+from collections import deque
+from collections import namedtuple
 import logging
-import pika
 import json
+
+import pika
+
+class Work:
+
+    Item = namedtuple("Item", ["ts", "fn", "contents"])
+    recent = deque(maxlen=24)
 
 class ExamplePublisher:
     EXCHANGE = "message"
