@@ -11,7 +11,7 @@ from pyftpdlib.authorizers import DummyAuthorizer
 class MyHandler(FTPHandler):
 
     def on_connect(self):
-        print("{0}:{1} connected").format(self.remote_ip, self.remote_port)
+        print("{0}:{1} connected".format(self.remote_ip, self.remote_port))
 
     def on_disconnect(self):
         # do something when client disconnects
@@ -42,14 +42,14 @@ class MyHandler(FTPHandler):
         import os
         os.remove(file)
 
-def serve(root):
+def serve(root, user, password, host, port):
     authorizer = DummyAuthorizer()
-    authorizer.add_user('user', '12345', homedir=root, perm='elradfmw')
+    authorizer.add_user(user, password, homedir=root, perm="elradfmw")
     authorizer.add_anonymous(homedir=root)
 
     handler = MyHandler
     handler.authorizer = authorizer
-    server = FTPServer(('', 2121), handler)
+    server = FTPServer((host, port), handler)
     server.serve_forever()
 
 def main(args):

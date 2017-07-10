@@ -27,6 +27,13 @@ class NeedsTemporaryDirectory():
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
+    params = {
+        "user": "testuser",
+        "password": "password",
+        "host": "0.0.0.0",
+        "port": 2121,
+    }
+
     def setUp(self):
         super().setUp()
         self.files = {
@@ -41,15 +48,12 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     def test_cf_server(self):
         server = multiprocessing.Process(
             target=test.localserver.serve,
-            args=(self.root,)
+            args=(self.root,),
+            kwargs=self.params
         )
         server.start()
         time.sleep(5)
-        for item in transfer(
-            host="0.0.0.0", port=22000,
-            user="testuser", password="",
-            root="test"
-        ):
+        for item in transfer(root=self.root, **self.params):
             print("transferred ", item)
 
         server.terminate()
@@ -58,15 +62,12 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     def test_local_server(self):
         server = multiprocessing.Process(
             target=test.localserver.serve,
-            args=(self.root,)
+            args=(self.root,),
+            kwargs=self.params
         )
         server.start()
         time.sleep(5)
-        for item in transfer(
-            host="0.0.0.0", port=22000,
-            user="testuser", password="",
-            root="test"
-        ):
+        for item in transfer(root=self.root, **self.params):
             print("transferred ", item)
 
         server.terminate()
