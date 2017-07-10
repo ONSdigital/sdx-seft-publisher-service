@@ -19,7 +19,7 @@ class Work:
         worker = FTPWorker(**self.params)
         # publisher = ?
         with worker as active:
-            for job in active.get(active.filenames))
+            for job in active.get(active.filenames):
                 while True:
                     payload = encrypt(job.contents)
                     if not publisher.publish(payload):
