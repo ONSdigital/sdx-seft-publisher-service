@@ -5,6 +5,7 @@ import logging
 
 from publisher import Job
 
+
 class FTPWorker:
 
     def __init__(self, user, password, host, port, timeout=30, **kwargs):
@@ -18,7 +19,7 @@ class FTPWorker:
         try:
             self.ftp.connect(self.host, self.port, timeout=self.timeout)
         except Exception as e:
-            log.warning(e)
+            self.log.warning(e)
             return None
 
         try:

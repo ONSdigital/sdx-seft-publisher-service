@@ -15,6 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from ftpclient import FTPWorker
 import test.localserver
 
+
 class NeedsTemporaryDirectory():
 
     def setUp(self):
@@ -37,7 +38,9 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.files = {
-            tempfile.mkstemp(suffix=".xls", dir=self.root): os.urandom(random.randint(1024, 4049))
+            tempfile.mkstemp(
+                suffix=".xls", dir=self.root
+            ): os.urandom(random.randint(1024, 4049))
             for i in range(12)
         }
         for (fd, path), content in self.files.items():

@@ -1,4 +1,3 @@
-from collections import deque
 from collections import namedtuple
 import logging
 import json
@@ -6,6 +5,7 @@ import json
 import pika
 
 Job = namedtuple("Job", ["ts", "fn", "contents"])
+
 
 class ExamplePublisher:
     EXCHANGE = "message"
@@ -45,8 +45,10 @@ class ExamplePublisher:
         if self._closing:
             self._connection.ioloop.stop()
         else:
-            self.log.warning("Connection closed, reopening in 5 seconds: (%s) %s",
-                           reply_code, reply_text)
+            self.log.warning(
+                "Connection closed, reopening in 5 seconds: (%s) %s",
+                reply_code, reply_text
+            )
             self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):
@@ -98,8 +100,10 @@ class ExamplePublisher:
         self._channel.queue_declare(self.on_queue_declareok, queue_name, durable=True)
 
     def on_queue_declareok(self, method_frame):
-        self.log.info("Binding %s to %s with %s",
-                    self.EXCHANGE, self.queue_name, self.ROUTING_KEY)
+        self.log.info(
+            "Binding %s to %s with %s",
+            self.EXCHANGE, self.queue_name, self.ROUTING_KEY
+        )
         self._channel.queue_bind(self.on_bindok, self.queue_name,
                                  self.EXCHANGE, self.ROUTING_KEY)
 
@@ -118,24 +122,30 @@ class ExamplePublisher:
 
     def on_delivery_confirmation(self, method_frame):
         confirmation_type = method_frame.method.NAME.split(".")[1].lower()
-        self.log.info("Received %s for delivery tag: %i",
-                    confirmation_type,
-                    method_frame.method.delivery_tag)
+        self.log.info(
+            "Received %s for delivery tag: %i",
+            confirmation_type,
+            method_frame.method.delivery_tag
+        )
         if confirmation_type == "ack":
             self._acked += 1
         elif confirmation_type == "nack":
             self._nacked += 1
         self._deliveries.remove(method_frame.method.delivery_tag)
-        self.log.info("Published %i messages, %i have yet to be confirmed, "
-                    "%i were acked and %i were nacked",
-                    self._message_number, len(self._deliveries),
-                    self._acked, self._nacked)
+        self.log.info(
+            "Published %i messages, %i have yet to be confirmed, "
+            "%i were acked and %i were nacked",
+            self._message_number, len(self._deliveries),
+            self._acked, self._nacked
+        )
 
     def schedule_next_message(self):
         if self._stopping:
             return
-        self.log.info("Scheduling next message for %0.1f seconds",
-                    self.PUBLISH_INTERVAL)
+        self.log.info(
+            "Scheduling next message for %0.1f seconds",
+            self.PUBLISH_INTERVAL
+        )
         self._connection.add_timeout(self.PUBLISH_INTERVAL,
                                      self.publish_message)
 

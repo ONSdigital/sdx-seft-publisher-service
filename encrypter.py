@@ -16,11 +16,13 @@ class Encrypter (object):
     def __init__(self, public_key, private_key, private_key_password):
         private_key_bytes = self._to_bytes(private_key)
 
-        self.private_key = serialization.load_pem_private_key(private_key_bytes,
-                                                              password=self._to_bytes(private_key_password),
-                                                              backend=backend)
+        self.private_key = serialization.load_pem_private_key(
+            private_key_bytes, password=self._to_bytes(private_key_password), backend=backend
+        )
 
-        self.public_key = serialization.load_pem_public_key(public_key.encode(), backend=backend)
+        self.public_key = serialization.load_pem_public_key(
+            public_key.encode(), backend=backend
+        )
 
         # first generate a random key
         self.cek = os.urandom(32)  # 256 bit random CEK
@@ -40,7 +42,14 @@ class Encrypter (object):
         return self._base_64_encode(b'{"alg":"RSA-OAEP","enc":"A256GCM"}')
 
     def _encrypted_key(self, cek):
-        ciphertext = self.public_key.encrypt(cek, padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA1()), algorithm=hashes.SHA1(), label=None))
+        ciphertext = self.public_key.encrypt(
+            cek,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA1()),
+                algorithm=hashes.SHA1(),
+                label=None
+            )
+        )
         return self._base_64_encode(ciphertext)
 
     def _encode_iv(self, iv):
@@ -53,7 +62,9 @@ class Encrypter (object):
         return base64.urlsafe_b64encode(text).decode().strip("=").encode()
 
     def _encode_and_signed(self, payload):
-        return jwt.encode(payload, self.private_key, algorithm="RS256", headers={'kid': KID, 'typ': 'jwt'})
+        return jwt.encode(
+            payload, self.private_key, algorithm="RS256", headers={'kid': KID, 'typ': 'jwt'}
+        )
 
     def encrypt(self, json):
         payload = self._encode_and_signed(json)
@@ -73,6 +84,9 @@ class Encrypter (object):
         encoded_tag = self._base_64_encode(tag)
 
         # assemble result
-        jwe = jwe_protected_header + b"." + encrypted_key + b"." + self._encode_iv(self.iv) + b"." + encoded_ciphertext + b"." + encoded_tag
+        jwe = b".".join(
+            jwe_protected_header, encrypted_key, self._encode_iv(self.iv),
+            encoded_ciphertext, encoded_tag
+        )
 
         return jwe

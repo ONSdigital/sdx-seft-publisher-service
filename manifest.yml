@@ -1,0 +1,7 @@
+---
+applications:
+- name: seft-publisher
+  buildpack: python_buildpack
+  command: test/test_ftp.py
+  no-route: true
+  health-check-type: process

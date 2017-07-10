@@ -1,5 +1,7 @@
 import argparse
 import logging
+from logging.handlers import WatchedFileHandler
+import os.path
 import tempfile
 import sys
 
@@ -42,6 +44,7 @@ class MyHandler(FTPHandler):
         import os
         os.remove(file)
 
+
 def serve(root, user, password, host, port):
     authorizer = DummyAuthorizer()
     authorizer.add_user(user, password, homedir=root, perm="elradfmw")
@@ -51,6 +54,7 @@ def serve(root, user, password, host, port):
     handler.authorizer = authorizer
     server = FTPServer((host, port), handler)
     server.serve_forever()
+
 
 def main(args):
     log = logging.getLogger("localftp")
@@ -77,6 +81,7 @@ def main(args):
 
     work_dir = args.work if args.work and os.path.isdir(args.work) else tempfile.mkdtemp()
     return serve(work_dir)
+
 
 def parser(description="FTP server for testing."):
     p = argparse.ArgumentParser(description)

@@ -1,10 +1,10 @@
-import base64
+from collections import deque
 
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
 import tornado.ioloop
 import tornado.web
 
-from publisher import Work
+from ftpclient import FTPWorker
+
 
 class StatusService(tornado.web.RequestHandler):
 
@@ -14,31 +14,27 @@ class StatusService(tornado.web.RequestHandler):
     def get(self):
         self.write(self.recent)
 
+
 class Work:
     recent = deque(maxlen=24)
 
-    @staticmethod
-    def encrypt(self, keydata):
-        public_key = load_pem_public_key(keydata)
-        ciphertext = public_key.encrypt(cek, padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA1()), algorithm=hashes.SHA1(), label=None))
-        return self._base_64_encode(ciphertext)
-
     @classmethod
     def transfer_task(cls, loop):
-        worker = FTPWorker(**self.params)
+        worker = FTPWorker(**params)
         # publisher = ?
         with worker as active:
             for job in active.get(active.filenames):
                 while True:
-                    payload = encrypt(base64.b64encode(job.contents))
+                    payload = encrypt(job.contents)
                     if not publisher.publish(payload):
-                        loop.sleep(backoff)
+                        continue
 
                 while True:
                     if not active.delete(job.fn):
-                        loop.sleep(backoff)
+                        continue
 
                 cls.recent.append((job.ts.isoformat(), job.fn))
+
 
 def make_app():
     return tornado.web.Application([
@@ -53,6 +49,6 @@ if __name__ == "__main__":
         Work.transfer_task,
         interval_ms,
     )
-    #start your period timer
+    # start your period timer
     sched.start()
     tornado.ioloop.IOLoop.current().start()

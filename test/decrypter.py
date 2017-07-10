@@ -6,7 +6,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.exceptions import AlreadyFinalized, InvalidKey, InvalidSignature, InvalidTag, UnsupportedAlgorithm, InternalError, NotYetFinalized
+from cryptography.exceptions import AlreadyFinalized, InvalidKey, InvalidSignature, InvalidTag
+from cryptography.exceptions import UnsupportedAlgorithm, InternalError, NotYetFinalized
 
 from app import create_and_wrap_logger
 
@@ -16,8 +17,8 @@ CEK_EXPECT_LENGTH = 32
 
 logger = create_and_wrap_logger(__name__)
 
-# TODO this is a copy of the code in sdx-decrypt, we need to change this asap and either shift the code into sdx-common or
-# allow decrypt to process both EQ and RAS files (preferable)
+# TODO this is a copy of the code in sdx-decrypt, we need to change this asap and either
+# shift the code into sdx-common or allow decrypt to process both EQ and RAS files (preferable)
 
 
 class DecryptError(Exception):
@@ -60,16 +61,28 @@ class Decrypter(object):
             tag = self._base64_decode(encoded_tag)
             cipher_text = self._base64_decode(encoded_cipher_text)
 
-            signed_token = self._decrypt_cipher_text(cipher_text, iv, decrypted_key, tag, jwe_protected_header)
+            signed_token = self._decrypt_cipher_text(
+                cipher_text, iv, decrypted_key, tag, jwe_protected_header
+            )
             return jwt.decode(signed_token, self.public_key, algorithms=['RS256'])
-        except (AlreadyFinalized, InvalidKey, InvalidSignature, InvalidTag, UnsupportedAlgorithm, InternalError, NotYetFinalized) as e:
+        except (
+            AlreadyFinalized, InvalidKey, InvalidSignature, InvalidTag, UnsupportedAlgorithm,
+            InternalError, NotYetFinalized
+        ) as e:
             logger.error("Failed to decrypt message")
             logger.exception(e)
             raise DecryptError()
 
     def _decrypt_key(self, encrypted_key):
         decoded_key = self._base64_decode(encrypted_key)
-        key = self.private_key.decrypt(decoded_key, padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA1()), algorithm=hashes.SHA1(), label=None))
+        key = self.private_key.decrypt(
+            decoded_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA1()),
+                algorithm=hashes.SHA1(),
+                label=None
+            )
+        )
         return key
 
     @staticmethod

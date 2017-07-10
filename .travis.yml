@@ -1,0 +1,9 @@
+language: python
+python:
+  - "3.5"
+  - "3.4"
+sudo: required
+install: make depinstall
+script: make test
+after_success:
+  - make sdist
