@@ -45,7 +45,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
             os.close(fd)
 
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
-    def test_cf_server(self):
+    def test_cf_server_delete(self):
         server = multiprocessing.Process(
             target=test.localserver.serve,
             args=(self.root,),
@@ -55,14 +55,54 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         time.sleep(5)
         worker = FTPWorker(**self.params)
         with worker as active:
-            items = set(i.contents for i in active.get(active.jobs))
+            n = len(self.files)
+            for fn in active.filenames:
+                with self.subTest(fn=fn):
+                    self.assertTrue(active.delete(fn))
+                    n -= 1
+                    self.assertEqual(n, len(os.listdir(self.root)))
+
+        server.terminate()
+
+    @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
+    def test_local_server_delete(self):
+        server = multiprocessing.Process(
+            target=test.localserver.serve,
+            args=(self.root,),
+            kwargs=self.params
+        )
+        server.start()
+        time.sleep(5)
+        worker = FTPWorker(**self.params)
+        with worker as active:
+            n = len(self.files)
+            for fn in active.filenames:
+                with self.subTest(fn=fn):
+                    self.assertTrue(active.delete(fn))
+                    n -= 1
+                    self.assertEqual(n, len(os.listdir(self.root)))
+
+        server.terminate()
+
+    @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
+    def test_cf_server_get(self):
+        server = multiprocessing.Process(
+            target=test.localserver.serve,
+            args=(self.root,),
+            kwargs=self.params
+        )
+        server.start()
+        time.sleep(5)
+        worker = FTPWorker(**self.params)
+        with worker as active:
+            items = set(i.contents for i in active.get(active.filenames))
             self.assertEqual(len(self.files), len(items))
             self.assertEqual(set(self.files.values()), items)
 
         server.terminate()
 
     @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
-    def test_local_server(self):
+    def test_local_server_get(self):
         server = multiprocessing.Process(
             target=test.localserver.serve,
             args=(self.root,),
@@ -72,7 +112,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         time.sleep(5)
         worker = FTPWorker(**self.params)
         with worker as active:
-            items = set(i.contents for i in active.get(active.jobs))
+            items = set(i.contents for i in active.get(active.filenames))
             self.assertEqual(len(self.files), len(items))
             self.assertEqual(set(self.files.values()), items)
 

@@ -11,6 +11,20 @@ class StatusService(tornado.web.RequestHandler):
     def get(self):
         self.write(self.recent)
 
+def transfer_task(loop):
+    worker = FTPWorker(**self.params)
+    # publisher = ?
+    with worker as active:
+        for item in active.get(active.filenames))
+            while True:
+                payload = encrypt(item.contents)
+                if not publisher.publish(payload):
+                    loop.sleep(backoff)
+
+            while True:
+                if not active.delete(item.fn):
+                    loop.sleep(backoff)
+
 def make_app():
     return tornado.web.Application([
         (r"/recent", StatusService, {"work": Work}),
