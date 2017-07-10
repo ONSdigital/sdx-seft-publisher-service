@@ -11,19 +11,25 @@ class StatusService(tornado.web.RequestHandler):
     def get(self):
         self.write(self.recent)
 
-def transfer_task(loop):
-    worker = FTPWorker(**self.params)
-    # publisher = ?
-    with worker as active:
-        for item in active.get(active.filenames))
-            while True:
-                payload = encrypt(item.contents)
-                if not publisher.publish(payload):
-                    loop.sleep(backoff)
+class Work:
+    recent = deque(maxlen=24)
 
-            while True:
-                if not active.delete(item.fn):
-                    loop.sleep(backoff)
+    @classmethod
+    def transfer_task(cls, loop):
+        worker = FTPWorker(**self.params)
+        # publisher = ?
+        with worker as active:
+            for job in active.get(active.filenames))
+                while True:
+                    payload = encrypt(job.contents)
+                    if not publisher.publish(payload):
+                        loop.sleep(backoff)
+
+                while True:
+                    if not active.delete(job.fn):
+                        loop.sleep(backoff)
+
+                cls.recent.append((job.ts.isoformat(), job.fn))
 
 def make_app():
     return tornado.web.Application([
@@ -31,8 +37,6 @@ def make_app():
     ])
 
 if __name__ == "__main__":
-    Work.recent.append(Work.Item(datetime.datetime.now().isoformat(), "a" * 32))
-    Work.recent.append(Work.Item(datetime.datetime.now().isoformat(), "b" * 32))
     app = make_app()
     app.listen(8888)
     sched = tornado.ioloop.PeriodicCallback(schedule_func,interval_ms, io_loop = main_loop)

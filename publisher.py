@@ -5,10 +5,7 @@ import json
 
 import pika
 
-class Work:
-
-    Item = namedtuple("Item", ["ts", "fn", "contents"])
-    recent = deque(maxlen=24)
+Job = namedtuple("Job", ["ts", "fn", "contents"])
 
 class ExamplePublisher:
     EXCHANGE = "message"
