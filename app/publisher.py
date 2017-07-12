@@ -3,6 +3,7 @@ import logging
 import json
 
 import pika
+import pika.adapters
 
 Job = namedtuple("Job", ["ts", "fn", "contents"])
 
@@ -27,7 +28,7 @@ class ExamplePublisher:
 
     def connect(self):
         self.log.info("Connecting to %s", self._url)
-        return pika.SelectConnection(pika.URLParameters(self._url),
+        return pika.adapters.TornadoConnection(pika.URLParameters(self._url),
                                      self.on_connection_open,
                                      stop_ioloop_on_close=False)
 
