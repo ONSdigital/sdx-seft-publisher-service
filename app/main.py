@@ -43,8 +43,9 @@ class Work:
     @staticmethod
     def encrypt_params(settings):
         return {
-            "amqp_url": settings.RABBIT_URL,
-            "queue_name": "Seft.Responses",
+            "public_key": None,
+            "private_key": None,
+            "private_key_password": None,
         }
 
     @staticmethod
