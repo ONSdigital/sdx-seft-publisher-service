@@ -8,6 +8,7 @@ import sys
 import tornado.ioloop
 import tornado.web
 
+from encrypter import Encrypter
 from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
 
@@ -40,6 +41,13 @@ class Work:
         }
 
     @staticmethod
+    def encrypt_params(settings):
+        return {
+            "amqp_url": settings.RABBIT_URL,
+            "queue_name": "Seft.Responses",
+        }
+
+    @staticmethod
     def ftp_params(settings):
         return {
             "user": "testuser",
@@ -54,11 +62,12 @@ class Work:
         log.info("Looking for files...")
         worker = FTPWorker(**cls.ftp_params(settings))
         publisher = DurableTopicPublisher(**cls.amqp_params(settings))
+        encrypter = Encrypter(**cls.encrypt_params(settings))
         with worker as active:
             for job in active.get(active.filenames):
                 while True:
-                    payload = encrypt(job.contents)
-                    if not publisher.publish(payload):
+                    payload = encrypter.encrypt(job.contents)
+                    if not publisher.publish_message(payload):
                         continue
 
                 while True:

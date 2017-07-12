@@ -150,20 +150,17 @@ class DurableTopicPublisher:
         self._connection.add_timeout(self.PUBLISH_INTERVAL,
                                      self.publish_message)
 
-    def publish_message(self):
+    def publish_message(self, message, content_type=None, headers=None):
         if self._stopping:
             return
 
-        message = {u"مفتاح": u" قيمة",
-                   u"键": u"值",
-                   u"キー": u"値"}
-        properties = pika.BasicProperties(app_id="example-publisher",
-                                          content_type="application/json",
-                                          headers=message)
+        properties = pika.BasicProperties(
+            app_id="sdx.seft", content_type=content_type, headers=headers
+        )
 
-        self._channel.basic_publish(self.EXCHANGE, self.ROUTING_KEY,
-                                    json.dumps(message, ensure_ascii=False),
-                                    properties)
+        self._channel.basic_publish(
+            self.EXCHANGE, self.ROUTING_KEY, message, properties
+        )
         self._message_number += 1
         self._deliveries.append(self._message_number)
         self.log.info("Published message # %i", self._message_number)
