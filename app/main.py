@@ -1,5 +1,6 @@
 import argparse
 from collections import deque
+from collections import namedtuple
 import logging
 from logging.handlers import WatchedFileHandler
 import sys
@@ -8,12 +9,21 @@ import tornado.ioloop
 import tornado.web
 
 from ftpclient import FTPWorker
+from publisher import DurableTopicPublisher
 
+try:
+    import settings
+except ImportError:
+    Settings = namedtuple(
+        "Settings",
+        ["RABBIT_URL",]
+    )
+    settings = Settings(None)
 
 class StatusService(tornado.web.RequestHandler):
 
     def initialize(self, work):
-        self.recent = {n: v._asdict() for n, v in enumerate(Work.recent)}
+        self.recent = {n: v for n, v in enumerate(Work.recent)}
 
     def get(self):
         self.write(self.recent)
@@ -23,7 +33,14 @@ class Work:
     recent = deque(maxlen=24)
 
     @staticmethod
-    def params(settings):
+    def amqp_params(settings):
+        return {
+            "amqp_url": settings.RABBIT_URL,
+            "queue_name": "Seft.Responses",
+        }
+
+    @staticmethod
+    def ftp_params(settings):
         return {
             "user": "testuser",
             "password": "password",
@@ -35,8 +52,8 @@ class Work:
     def transfer_task(cls):
         log = logging.getLogger("sdx.seft")
         log.info("Looking for files...")
-        worker = FTPWorker(**cls.params(None))
-        # publisher = ?
+        worker = FTPWorker(**cls.ftp_params(settings))
+        publisher = DurableTopicPublisher(**cls.amqp_params(settings))
         with worker as active:
             for job in active.get(active.filenames):
                 while True:

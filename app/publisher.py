@@ -8,14 +8,14 @@ import pika.adapters
 Job = namedtuple("Job", ["ts", "fn", "contents"])
 
 
-class ExamplePublisher:
+class DurableTopicPublisher:
+
     EXCHANGE = "message"
-    EXCHANGE_TYPE = "topic"
     PUBLISH_INTERVAL = 1
     ROUTING_KEY = "example.text"
 
-    def __init__(self, amqp_url, queue_name, log=None):
-        self.log = log or logging.getLogger("sdx")
+    def __init__(self, amqp_url, queue_name, log=None, **kwargs):
+        self.log = log or logging.getLogger("sdx.seft")
         self._connection = None
         self._channel = None
         self._deliveries = []
@@ -88,9 +88,9 @@ class ExamplePublisher:
 
     def setup_exchange(self, exchange_name):
         self.log.info("Declaring exchange %s", exchange_name)
-        self._channel.exchange_declare(self.on_exchange_declareok,
-                                       exchange_name,
-                                       self.EXCHANGE_TYPE)
+        self._channel.exchange_declare(
+            self.on_exchange_declareok, exchange_name, "topic"
+        )
 
     def on_exchange_declareok(self, unused_frame):
         self.log.info("Exchange declared")
