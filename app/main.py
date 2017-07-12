@@ -69,8 +69,8 @@ def parser(description="SEFT Publisher service."):
         help="Set a file path for log output")
     return p
 
-def main(args):
-    log = logging.getLogger("sdx.seft")
+def configure_log(args, name="sdx.seft"):
+    log = logging.getLogger(name)
     log.setLevel(args.log_level)
 
     formatter = logging.Formatter(
@@ -91,20 +91,29 @@ def main(args):
     log = logging.getLogger("pika")
     log.setLevel(args.log_level)
     log.addHandler(ch)
+    return name
 
+def main(args):
+    log = logging.getLogger(configure_log(args))
+
+    # Create the API service
     app = make_app()
     app.listen(8888)
+
+    # Create the scheduled task
     interval_ms = 30 * 60 * 1000
-    interval_ms = 3 * 1000
     sched = tornado.ioloop.PeriodicCallback(
         Work.transfer_task,
         interval_ms,
     )
-    # start your period timer
+
     sched.start()
-    log = logging.getLogger("sdx.seft")
     log.info("Scheduler started.")
-    tornado.ioloop.IOLoop.current().start()
+
+    # Perform the first transfer immediately
+    loop = tornado.ioloop.IOLoop.current()
+    loop.spawn_callback(Work.transfer_task)
+    loop.start()
     return 0
 
 if __name__ == "__main__":
