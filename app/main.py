@@ -22,11 +22,20 @@ class StatusService(tornado.web.RequestHandler):
 class Work:
     recent = deque(maxlen=24)
 
+    @staticmethod
+    def params(settings):
+        return {
+            "user": "testuser",
+            "password": "password",
+            "host": "0.0.0.0",
+            "port": 2121,
+        }
+
     @classmethod
     def transfer_task(cls):
         log = logging.getLogger("sdx.seft")
         log.info("Looking for files...")
-        worker = FTPWorker(**params)
+        worker = FTPWorker(**cls.params(None))
         # publisher = ?
         with worker as active:
             for job in active.get(active.filenames):
@@ -86,6 +95,7 @@ def main(args):
     app = make_app()
     app.listen(8888)
     interval_ms = 30 * 60 * 1000
+    interval_ms = 3 * 1000
     sched = tornado.ioloop.PeriodicCallback(
         Work.transfer_task,
         interval_ms,
