@@ -1,6 +1,6 @@
 ---
 applications:
-- name: seft-publisher
+- name: seft-publisher-test
   buildpack: python_buildpack
   command: app/test/test_ftp.py
   no-route: true

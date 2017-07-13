@@ -18,8 +18,8 @@ import app.test.localserver
 """
 To run this test in a Cloudfoundry environment:
 
-$ cf push seft-publisher
-$ cf logs seft-publisher --recent
+$ cf push seft-publisher-test
+$ cf logs seft-publisher-test --recent
 
 """
 
