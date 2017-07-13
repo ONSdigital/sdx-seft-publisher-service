@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#   encoding: UTF-8
 
 import os
 import multiprocessing
@@ -9,11 +10,16 @@ import tempfile
 import time
 import unittest
 
+print(os.getcwd())
+print(os.listdir())
 # To run test in CF
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+print(sys.path)
 
-from app.ftpclient import FTPWorker
-import app.test.localserver
+from ftpclient import FTPWorker
+import localserver
+
+env_vars = os.getenv("VCAP_SERVICES")
 
 """
 To run this test in a Cloudfoundry environment:
@@ -58,7 +64,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server_delete(self):
         server = multiprocessing.Process(
-            target=app.test.localserver.serve,
+            target=localserver.serve,
             args=(self.root,),
             kwargs=self.params
         )
@@ -78,7 +84,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
     def test_local_server_delete(self):
         server = multiprocessing.Process(
-            target=app.test.localserver.serve,
+            target=localserver.serve,
             args=(self.root,),
             kwargs=self.params
         )
@@ -98,7 +104,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server_get(self):
         server = multiprocessing.Process(
-            target=app.test.localserver.serve,
+            target=localserver.serve,
             args=(self.root,),
             kwargs=self.params
         )
@@ -115,7 +121,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
     def test_local_server_get(self):
         server = multiprocessing.Process(
-            target=app.test.localserver.serve,
+            target=localserver.serve,
             args=(self.root,),
             kwargs=self.params
         )

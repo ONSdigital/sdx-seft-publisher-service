@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#   encoding: UTF-8
+
 import argparse
 from collections import deque
 from collections import namedtuple

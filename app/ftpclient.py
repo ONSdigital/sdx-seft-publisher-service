@@ -3,7 +3,7 @@ from ftplib import FTP
 from io import BytesIO
 import logging
 
-from app.publisher import Job
+from publisher import Job
 
 
 class FTPWorker:
