@@ -17,8 +17,6 @@ print(sys.path)
 from ftpclient import FTPWorker
 import localserver
 
-env_vars = os.getenv("VCAP_SERVICES")
-
 """
 To run this test in a Cloudfoundry environment:
 

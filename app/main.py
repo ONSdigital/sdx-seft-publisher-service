@@ -103,6 +103,9 @@ def parser(description="SEFT Publisher service."):
         "--keys", default=os.path.abspath(os.path.join(here, "test")),
         help="Set a path to the keypair directory.")
     p.add_argument(
+        "--port", type=int, default=int(os.getenv("PORT", "8080")),
+        help="Set a port for the service.")
+    p.add_argument(
         "--log", default=None, dest="log_path",
         help="Set a file path for log output")
     return p
@@ -136,9 +139,11 @@ def main(args):
     log.info("Launched in {0}.".format(os.getcwd()))
 
     log.info(os.listdir("app/test"))
+    log.info(os.getenv("VCAP_SERVICES"))
+
     # Create the API service
     app = make_app()
-    app.listen(8888)
+    app.listen(args.port)
 
     # Create the scheduled task
     interval_ms = 30 * 60 * 1000
