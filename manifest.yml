@@ -10,3 +10,5 @@ applications:
   command: app/main.py
   health-check-type: http
   health-check-http-endpoint: /recent
+services:
+- sdx-rabbitmq

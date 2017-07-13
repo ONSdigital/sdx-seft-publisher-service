@@ -10,8 +10,6 @@ import tempfile
 import time
 import unittest
 
-print(os.getcwd())
-print(os.listdir())
 # To run test in CF
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 print(sys.path)

@@ -6,6 +6,7 @@ from collections import deque
 from collections import namedtuple
 import logging
 from logging.handlers import WatchedFileHandler
+import os.path
 import sys
 
 import tornado.ioloop
@@ -27,13 +28,13 @@ except ImportError:
 class StatusService(tornado.web.RequestHandler):
 
     def initialize(self, work):
-        self.recent = {n: v for n, v in enumerate(Work.recent)}
+        self.recent = {n: v for n, v in enumerate(Task.recent)}
 
     def get(self):
         self.write(self.recent)
 
 
-class Work:
+class Task:
     recent = deque(maxlen=24)
 
     @staticmethod
@@ -44,11 +45,11 @@ class Work:
         }
 
     @staticmethod
-    def encrypt_params(settings):
+    def encrypt_params(settings, locn="."):
         return {
-            "public_key": None,
-            "private_key": None,
-            "private_key_password": None,
+            "public_key": os.path.join(locn, "sdc-seft-signing-ras-public-key.pem"),
+            "private_key": os.path.join(locn, "sdc-seft-encryption-sdx-private-key.pem"),
+            "private_key_password": "digitaleq",
         }
 
     @staticmethod
@@ -60,13 +61,16 @@ class Work:
             "port": 2121,
         }
 
-    @classmethod
-    def transfer_task(cls):
+    def __init__(self, args):
+        self.args = args
+
+    def transfer_files(self):
         log = logging.getLogger("sdx.seft")
         log.info("Looking for files...")
-        worker = FTPWorker(**cls.ftp_params(settings))
-        publisher = DurableTopicPublisher(**cls.amqp_params(settings))
-        encrypter = Encrypter(**cls.encrypt_params(settings))
+        log.info(vars(self.args))
+        worker = FTPWorker(**self.ftp_params(settings))
+        publisher = DurableTopicPublisher(**self.amqp_params(settings))
+        encrypter = Encrypter(**self.encrypt_params(settings, locn=self.args.keys))
         with worker as active:
             for job in active.get(active.filenames):
                 while True:
@@ -78,22 +82,26 @@ class Work:
                     if not active.delete(job.fn):
                         continue
 
-                cls.recent.append((job.ts.isoformat(), job.fn))
+                self.recent.append((job.ts.isoformat(), job.fn))
 
 
 def make_app():
     return tornado.web.Application([
-        (r"/recent", StatusService, {"work": Work}),
+        (r"/recent", StatusService, {"work": Task}),
     ])
 
 
 def parser(description="SEFT Publisher service."):
+    here = os.path.dirname(__file__)
     p = argparse.ArgumentParser(description)
     p.add_argument(
         "-v", "--verbose", required=False,
         action="store_const", dest="log_level",
         const=logging.DEBUG, default=logging.INFO,
         help="Increase the verbosity of output")
+    p.add_argument(
+        "--keys", default=os.path.abspath(os.path.join(here, "test")),
+        help="Set a path to the keypair directory.")
     p.add_argument(
         "--log", default=None, dest="log_path",
         help="Set a file path for log output")
@@ -125,15 +133,18 @@ def configure_log(args, name="sdx.seft"):
 
 def main(args):
     log = logging.getLogger(configure_log(args))
+    log.info("Launched in {0}.".format(os.getcwd()))
 
+    log.info(os.listdir("app/test"))
     # Create the API service
     app = make_app()
     app.listen(8888)
 
     # Create the scheduled task
     interval_ms = 30 * 60 * 1000
+    task = Task(args)
     sched = tornado.ioloop.PeriodicCallback(
-        Work.transfer_task,
+        task.transfer_files,
         interval_ms,
     )
 
@@ -142,7 +153,7 @@ def main(args):
 
     # Perform the first transfer immediately
     loop = tornado.ioloop.IOLoop.current()
-    loop.spawn_callback(Work.transfer_task)
+    loop.spawn_callback(task.transfer_files)
     loop.start()
     return 0
 
