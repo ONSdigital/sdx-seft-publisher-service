@@ -39,9 +39,9 @@ class Task:
     @staticmethod
     def encrypt_params(services, locn="."):
         rv = {
-            "public_key": os.path.join(locn, "sdc-seft-signing-ras-public-key.pem"),
-            "private_key": os.path.join(locn, "sdc-seft-encryption-sdx-private-key.pem"),
-            "private_key_password": "digitaleq",
+            "public_key": os.path.join(locn, "test_no_password.pub"),
+            "private_key": os.path.join(locn, "test_no_password.pem"),
+            "private_key_password": "",
         }
         log = logging.getLogger("sdx.seft.crypt")
         log.info(os.stat(rv["private_key"]))

@@ -10,5 +10,10 @@ applications:
   command: app/main.py
   health-check-type: http
   health-check-http-endpoint: /recent
+- name: crypto-debug
+  buildpack: python_buildpack
+  command: python3 -c "from cryptography.hazmat.bindings._openssl import ffi, lib;print(lib.PEM_read_bio_PrivateKey);print(lib)"
+  no-route: true
+  health-check-type: process
 services:
 - sdx-rabbitmq
