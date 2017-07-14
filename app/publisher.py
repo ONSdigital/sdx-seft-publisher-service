@@ -1,6 +1,5 @@
 from collections import namedtuple
 import logging
-import json
 
 import pika
 import pika.adapters
@@ -28,9 +27,11 @@ class DurableTopicPublisher:
 
     def connect(self):
         self.log.info("Connecting to %s", self._url)
-        return pika.adapters.TornadoConnection(pika.URLParameters(self._url),
-                                     self.on_connection_open,
-                                     stop_ioloop_on_close=False)
+        return pika.adapters.TornadoConnection(
+            pika.URLParameters(self._url),
+            self.on_connection_open,
+            stop_ioloop_on_close=False
+        )
 
     def on_connection_open(self, unused_connection):
         self.log.info("Connection opened")
@@ -187,22 +188,3 @@ class DurableTopicPublisher:
         self.log.info("Closing connection")
         self._closing = True
         self._connection.close()
-
-
-def main():
-    log_format = ("%(levelname) -10s %(asctime)s %(name) -30s %(funcName) "
-                  "-35s %(lineno) -5d: %(message)s")
-    logging.basicConfig(level=logging.DEBUG, format=log_format)
-
-    # Connect to localhost:5672 as guest with the password guest and virtual host "/" (%2F)
-    example = ExamplePublisher(
-        "amqp://guest:guest@localhost:5672/%2F?connection_attempts=3&heartbeat_interval=3600",
-        "test"
-    )
-    try:
-        example.run()
-    except KeyboardInterrupt:
-        example.stop()
-
-if __name__ == "__main__":
-    main()

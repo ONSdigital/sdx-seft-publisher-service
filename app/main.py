@@ -3,7 +3,7 @@
 
 import argparse
 from collections import deque
-from collections import namedtuple
+import json
 import logging
 from logging.handlers import WatchedFileHandler
 import os.path
@@ -16,14 +16,6 @@ from encrypter import Encrypter
 from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
 
-try:
-    import settings
-except ImportError:
-    Settings = namedtuple(
-        "Settings",
-        ["RABBIT_URL",]
-    )
-    settings = Settings(None)
 
 class StatusService(tornado.web.RequestHandler):
 
@@ -38,22 +30,25 @@ class Task:
     recent = deque(maxlen=24)
 
     @staticmethod
-    def amqp_params(settings):
+    def amqp_params(services):
         return {
-            "amqp_url": settings.RABBIT_URL,
+            "amqp_url": os.getenv("RABBIT_URL"),
             "queue_name": "Seft.Responses",
         }
 
     @staticmethod
-    def encrypt_params(settings, locn="."):
-        return {
+    def encrypt_params(services, locn="."):
+        rv = {
             "public_key": os.path.join(locn, "sdc-seft-signing-ras-public-key.pem"),
             "private_key": os.path.join(locn, "sdc-seft-encryption-sdx-private-key.pem"),
             "private_key_password": "digitaleq",
         }
+        log = logging.getLogger("sdx.seft.crypt")
+        log.info(os.stat(rv["private_key"]))
+        return rv
 
     @staticmethod
-    def ftp_params(settings):
+    def ftp_params(services):
         return {
             "user": "testuser",
             "password": "password",
@@ -61,16 +56,17 @@ class Task:
             "port": 2121,
         }
 
-    def __init__(self, args):
+    def __init__(self, args, services):
         self.args = args
+        self.services = services
 
     def transfer_files(self):
         log = logging.getLogger("sdx.seft")
         log.info("Looking for files...")
         log.info(vars(self.args))
-        worker = FTPWorker(**self.ftp_params(settings))
-        publisher = DurableTopicPublisher(**self.amqp_params(settings))
-        encrypter = Encrypter(**self.encrypt_params(settings, locn=self.args.keys))
+        worker = FTPWorker(**self.ftp_params(self.services))
+        publisher = DurableTopicPublisher(**self.amqp_params(self.services))
+        encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
         with worker as active:
             for job in active.get(active.filenames):
                 while True:
@@ -110,6 +106,7 @@ def parser(description="SEFT Publisher service."):
         help="Set a file path for log output")
     return p
 
+
 def configure_log(args, name="sdx.seft"):
     log = logging.getLogger(name)
     log.setLevel(args.log_level)
@@ -134,12 +131,13 @@ def configure_log(args, name="sdx.seft"):
     log.addHandler(ch)
     return name
 
+
 def main(args):
     log = logging.getLogger(configure_log(args))
     log.info("Launched in {0}.".format(os.getcwd()))
 
     log.info(os.listdir("app/test"))
-    log.info(os.getenv("VCAP_SERVICES"))
+    services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
 
     # Create the API service
     app = make_app()
@@ -147,7 +145,7 @@ def main(args):
 
     # Create the scheduled task
     interval_ms = 30 * 60 * 1000
-    task = Task(args)
+    task = Task(args, services)
     sched = tornado.ioloop.PeriodicCallback(
         task.transfer_files,
         interval_ms,
