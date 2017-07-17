@@ -44,11 +44,13 @@ class Task:
         priv_key = None
         pub_key = None
         try:
-            priv_key = open(priv_fp, "r").read()
+            with open(priv_fp, "r") as key_file:
+                priv_key = key_file.read()
         except:
             log.warning("Could not read key {0}".format(priv_fp))
         try:
-            pub_key = open(pub_fp, "r").read()
+            with open(pub_fp, "r") as key_file:
+                pub_key = key_file.read()
         except:
             log.warning("Could not read key {0}".format(pub_fp))
 
