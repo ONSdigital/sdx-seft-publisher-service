@@ -38,13 +38,25 @@ class Task:
 
     @staticmethod
     def encrypt_params(services, locn="."):
-        rv = {
-            "public_key": os.path.join(locn, "test_no_password.pub"),
-            "private_key": os.path.join(locn, "test_no_password.pem"),
-            "private_key_password": "",
-        }
         log = logging.getLogger("sdx.seft.crypt")
-        log.info(os.stat(rv["private_key"]))
+        pub_fp = os.path.join(locn, "test_no_password.pub")
+        priv_fp = os.path.join(locn, "test_no_password.pem")
+        priv_key = None
+        pub_key = None
+        try:
+            priv_key = open(priv_fp, "r").read()
+        except:
+            log.warning("Could not read key {0}".format(priv_fp))
+        try:
+            pub_key = open(pub_fp, "r").read()
+        except:
+            log.warning("Could not read key {0}".format(pub_fp))
+
+        rv = {
+            "public_key": pub_key,
+            "private_key": priv_key,
+            "private_key_password": None,
+        }
         return rv
 
     @staticmethod
