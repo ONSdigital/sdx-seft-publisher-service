@@ -84,9 +84,9 @@ class Encrypter (object):
         encoded_tag = self._base_64_encode(tag)
 
         # assemble result
-        jwe = b".".join(
+        jwe = b".".join((
             jwe_protected_header, encrypted_key, self._encode_iv(self.iv),
             encoded_ciphertext, encoded_tag
-        )
+        ))
 
         return jwe

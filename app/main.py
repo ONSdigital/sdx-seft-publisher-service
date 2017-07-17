@@ -2,6 +2,7 @@
 #   encoding: UTF-8
 
 import argparse
+import base64
 from collections import deque
 import json
 import logging
@@ -36,10 +37,13 @@ class Task:
     @staticmethod
     def amqp_params(services):
         log = logging.getLogger("sdx.seft.amqp")
-        rabbit = services.get("rabbitmq")[0]
-        log.info(rabbit)
+        try:
+            uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
+        except (IndexError, KeyError):
+            uri = None
+        log.info(uri)
         return {
-            "amqp_url": rabbit,
+            "amqp_url": uri,
             "queue_name": "Seft.Responses",
         }
 
@@ -80,19 +84,26 @@ class Task:
     def __init__(self, args, services):
         self.args = args
         self.services = services
+        self.publisher = DurableTopicPublisher(**self.amqp_params(services))
 
     def transfer_files(self):
         log = logging.getLogger("sdx.seft")
+        if not self.publisher.publishing:
+            log.warning("Publisher is not ready.")
+            return
+
         log.info("Looking for files...")
         log.info(vars(self.args))
         worker = FTPWorker(**self.ftp_params(self.services))
-        publisher = DurableTopicPublisher(**self.amqp_params(self.services))
         encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
         with worker as active:
             for job in active.get(active.filenames):
                 while True:
-                    payload = encrypter.encrypt(job.contents)
-                    if not publisher.publish_message(payload):
+                    data = job._asdict()
+                    data["contents"] = base64.standard_b64encode(job.contents).decode("ascii")
+                    data["ts"] = job.ts.isoformat()
+                    payload = encrypter.encrypt(data)
+                    if not self.publisher.publish_message(payload):
                         continue
 
                 while True:
@@ -163,9 +174,13 @@ def main(args):
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
 
     if args.test:
+        locn = tempfile.mkdtemp()
+        with tempfile.NamedTemporaryFile(suffix=".xls", dir=locn, delete=False) as f:
+            f.write(os.urandom(4096))
+
         server = multiprocessing.Process(
             target=test.localserver.serve,
-            args=(tempfile.mkdtemp(),),
+            args=(locn,),
             kwargs=Task.ftp_params(services)
         )
         server.start()
@@ -188,8 +203,8 @@ def main(args):
 
     # Perform the first transfer immediately
     loop = tornado.ioloop.IOLoop.current()
-    loop.spawn_callback(task.transfer_files)
-    loop.start()
+    loop.call_later(6, task.transfer_files)
+    task.publisher.run()
     return 0
 
 if __name__ == "__main__":

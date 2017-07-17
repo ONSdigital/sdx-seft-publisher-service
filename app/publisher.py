@@ -11,7 +11,7 @@ class DurableTopicPublisher:
 
     EXCHANGE = "message"
     PUBLISH_INTERVAL = 1
-    ROUTING_KEY = "example.text"
+    ROUTING_KEY = "JWT"
 
     def __init__(self, amqp_url, queue_name, log=None, **kwargs):
         self.log = log or logging.getLogger("sdx.seft")
@@ -23,7 +23,9 @@ class DurableTopicPublisher:
         self._message_number = 0
         self._stopping = False
         self._url = amqp_url
+        self.queue_name = queue_name
         self._closing = False
+        self.publishing = False
 
     def connect(self):
         self.log.info("Connecting to %s", self._url)
@@ -116,7 +118,7 @@ class DurableTopicPublisher:
     def start_publishing(self):
         self.log.info("Issuing consumer related RPC commands")
         self.enable_delivery_confirmations()
-        self.schedule_next_message()
+        self.publishing = True
 
     def enable_delivery_confirmations(self):
         self.log.info("Issuing Confirm.Select RPC command")
@@ -165,7 +167,7 @@ class DurableTopicPublisher:
         self._message_number += 1
         self._deliveries.append(self._message_number)
         self.log.info("Published message # %i", self._message_number)
-        self.schedule_next_message()
+        return self._message_number
 
     def close_channel(self):
         self.log.info("Closing the channel")
