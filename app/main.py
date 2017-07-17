@@ -6,8 +6,11 @@ from collections import deque
 import json
 import logging
 from logging.handlers import WatchedFileHandler
+import multiprocessing
 import os.path
 import sys
+import tempfile
+import time
 
 import tornado.ioloop
 import tornado.web
@@ -15,6 +18,7 @@ import tornado.web
 from encrypter import Encrypter
 from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
+import test.localserver
 
 
 class StatusService(tornado.web.RequestHandler):
@@ -31,8 +35,11 @@ class Task:
 
     @staticmethod
     def amqp_params(services):
+        log = logging.getLogger("sdx.seft.amqp")
+        rabbit = services.get("rabbitmq")[0]
+        log.info(rabbit)
         return {
-            "amqp_url": os.getenv("RABBIT_URL"),
+            "amqp_url": rabbit,
             "queue_name": "Seft.Responses",
         }
 
@@ -116,6 +123,9 @@ def parser(description="SEFT Publisher service."):
         "--port", type=int, default=int(os.getenv("PORT", "8080")),
         help="Set a port for the service.")
     p.add_argument(
+        "--test", default=False, action="store_true",
+        help="Configure for functional test.")
+    p.add_argument(
         "--log", default=None, dest="log_path",
         help="Set a file path for log output")
     return p
@@ -150,8 +160,16 @@ def main(args):
     log = logging.getLogger(configure_log(args))
     log.info("Launched in {0}.".format(os.getcwd()))
 
-    log.info(os.listdir("app/test"))
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
+
+    if args.test:
+        server = multiprocessing.Process(
+            target=test.localserver.serve,
+            args=(tempfile.mkdtemp(),),
+            kwargs=Task.ftp_params(services)
+        )
+        server.start()
+        time.sleep(5)
 
     # Create the API service
     app = make_app()

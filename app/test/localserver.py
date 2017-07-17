@@ -83,7 +83,7 @@ def main(args):
     log.addHandler(ch)
 
     work_dir = args.work if args.work and os.path.isdir(args.work) else tempfile.mkdtemp()
-    return serve(work_dir, "user", "password", "127.0.0.1", args.port)
+    return serve(work_dir, "testuser", "password", "127.0.0.1", args.port)
 
 
 def parser(description="FTP server for testing."):

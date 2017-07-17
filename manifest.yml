@@ -7,7 +7,7 @@ applications:
   health-check-type: process
 - name: seft-publisher-functest
   buildpack: python_buildpack
-  command: app/test/localserver.py --port=2121; app/main.py
+  command: app/main.py --test
   health-check-type: http
   health-check-http-endpoint: /recent
 - name: seft-publisher
