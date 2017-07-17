@@ -4,6 +4,8 @@
 import argparse
 import base64
 from collections import deque
+from collections import OrderedDict
+import datetime
 import json
 import logging
 from logging.handlers import WatchedFileHandler
@@ -32,7 +34,7 @@ class StatusService(tornado.web.RequestHandler):
 
 
 class Task:
-    recent = deque(maxlen=24)
+    recent = OrderedDict([])
 
     @staticmethod
     def amqp_params(services):
@@ -98,19 +100,20 @@ class Task:
         encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
         with worker as active:
             for job in active.get(active.filenames):
-                while True:
+                if job.fn not in self.recent:
                     data = job._asdict()
                     data["contents"] = base64.standard_b64encode(job.contents).decode("ascii")
                     data["ts"] = job.ts.isoformat()
                     payload = encrypter.encrypt(data)
-                    if not self.publisher.publish_message(payload):
-                        continue
+                    msg_id = self.publisher.publish_message(payload)
+                    self.recent[job.fn] = (job.ts, msg_id)
 
-                while True:
-                    if not active.delete(job.fn):
-                        continue
-
-                self.recent.append((job.ts.isoformat(), job.fn))
+            now = datetime.datetime.utcnow()
+            for fn, (ts, msg_id) in self.recent.copy().items():
+                if msg_id not in self.publisher._deliveries:
+                    active.delete(fn)
+                if now - ts > datetime.timedelta(hours=1):
+                    del self.recent[fn]
 
 
 def make_app():
