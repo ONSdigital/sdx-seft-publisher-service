@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#   encoding: UTF-8
+
 import argparse
 import logging
 from logging.handlers import WatchedFileHandler
@@ -80,7 +83,7 @@ def main(args):
     log.addHandler(ch)
 
     work_dir = args.work if args.work and os.path.isdir(args.work) else tempfile.mkdtemp()
-    return serve(work_dir)
+    return serve(work_dir, "user", "password", "127.0.0.1", args.port)
 
 
 def parser(description="FTP server for testing."):
@@ -88,6 +91,9 @@ def parser(description="FTP server for testing."):
     p.add_argument(
         "--work", default=None,
         help="Set a path to the working directory.")
+    p.add_argument(
+        "--port", type=int, default=21,
+        help="Set a port for the service.")
     p.add_argument(
         "-v", "--verbose", required=False,
         action="store_const", dest="log_level",
