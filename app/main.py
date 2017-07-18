@@ -104,6 +104,9 @@ class Task:
         worker = FTPWorker(**self.ftp_params(self.services))
         encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
         with worker as active:
+            if not active:
+                return
+
             for job in active.get(active.filenames):
                 if job.fn not in self.recent:
                     data = job._asdict()
