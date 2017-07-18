@@ -1,3 +1,5 @@
+.PHONY: build dev start test
+
 dev: check-env
 	if pip list | grep sdx-common; \
 	then \
@@ -11,13 +13,13 @@ dev: check-env
 build:
 	pip3 install -r requirements.txt
 
-test:
+test: dev
 	pip3 install -r test_requirements.txt
 	flake8 --exclude lib .
 	python3 -m unittest */tests/*.py
 
 start:
-	./startup.sh
+	./app/main.py
 
 check-env:
 ifeq ($(SDX_HOME),)
