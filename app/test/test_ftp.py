@@ -14,7 +14,12 @@ import unittest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from ftpclient import FTPWorker
-import localserver
+
+try:
+    from localserver import serve
+except ImportError:
+    # Travis CI
+    from app.test.localserver import serve
 
 """
 To run this test in a Cloudfoundry environment:
@@ -59,7 +64,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server_delete(self):
         server = multiprocessing.Process(
-            target=localserver.serve,
+            target=serve,
             args=(self.root,),
             kwargs=self.params
         )
@@ -79,7 +84,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
     def test_local_server_delete(self):
         server = multiprocessing.Process(
-            target=localserver.serve,
+            target=serve,
             args=(self.root,),
             kwargs=self.params
         )
@@ -99,7 +104,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server_get(self):
         server = multiprocessing.Process(
-            target=localserver.serve,
+            target=serve,
             args=(self.root,),
             kwargs=self.params
         )
@@ -116,7 +121,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
     def test_local_server_get(self):
         server = multiprocessing.Process(
-            target=localserver.serve,
+            target=serve,
             args=(self.root,),
             kwargs=self.params
         )

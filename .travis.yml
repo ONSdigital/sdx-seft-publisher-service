@@ -4,5 +4,12 @@ python:
   - "3.5"
   - "3.4"
 sudo: required
-install: make dev
-script: make test
+install:
+  - make clean
+  - make build
+  - pip install codecov
+script:
+  - make test
+  - coverage run -m unittest app/test/test_*.py
+after_success:
+  - codecov
