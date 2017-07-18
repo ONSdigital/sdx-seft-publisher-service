@@ -42,7 +42,7 @@ class Task:
         try:
             uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
         except (IndexError, KeyError):
-            uri = None
+            uri = os.getenv["RABBIT_URL"]
         log.info(uri)
         return {
             "amqp_url": uri,
@@ -52,8 +52,8 @@ class Task:
     @staticmethod
     def encrypt_params(services, locn="."):
         log = logging.getLogger("sdx.seft.crypt")
-        pub_fp = os.path.join(locn, "test_no_password.pub")
-        priv_fp = os.path.join(locn, "test_no_password.pem")
+        pub_fp = os.getenv("RAS_SEFT_PUBLIC_KEY", os.path.join(locn, "test_no_password.pub"))
+        priv_fp = os.getenv("SDX_SEFT_PRIVATE_KEY", os.path.join(locn, "test_no_password.pem"))
         priv_key = None
         pub_key = None
         try:
@@ -70,7 +70,7 @@ class Task:
         rv = {
             "public_key": pub_key,
             "private_key": priv_key,
-            "private_key_password": None,
+            "private_key_password": os.getenv("SDX_SEFT_PRIVATE_KEY_PASSWORD", None),
         }
         return rv
 
