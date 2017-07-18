@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 
+from sdx.common.logger_config import logger_initial_config
 import tornado.ioloop
 import tornado.web
 
@@ -54,7 +55,7 @@ class Task:
 
     @staticmethod
     def encrypt_params(services, locn="."):
-        log = logging.getLogger("sdx.seft.crypt")
+        log = logging.getLogger("sdx-seft-publisher")
         pub_fp = os.getenv("RAS_SEFT_PUBLIC_KEY", os.path.join(locn, "test_no_password.pub"))
         priv_fp = os.getenv("SDX_SEFT_PRIVATE_KEY", os.path.join(locn, "test_no_password.pem"))
         priv_key = None
@@ -92,7 +93,7 @@ class Task:
         self.publisher = DurableTopicPublisher(**self.amqp_params(services))
 
     def transfer_files(self):
-        log = logging.getLogger("sdx.seft")
+        log = logging.getLogger("sdx-seft-publisher")
         if not self.publisher.publishing:
             log.warning("Publisher is not ready.")
             return
@@ -109,11 +110,13 @@ class Task:
                     payload = encrypter.encrypt(data)
                     msg_id = self.publisher.publish_message(payload)
                     self.recent[job.fn] = (job.ts, msg_id)
+                    log.info("Published {0}".format(job.fn))
 
             now = datetime.datetime.utcnow()
             for fn, (ts, msg_id) in self.recent.copy().items():
                 if msg_id not in self.publisher._deliveries:
                     active.delete(fn)
+                    log.info("Deleted {0}".format(fn))
                 if now - ts > datetime.timedelta(hours=1):
                     del self.recent[fn]
 
@@ -128,11 +131,6 @@ def parser(description="SEFT Publisher service."):
     here = os.path.dirname(__file__)
     p = argparse.ArgumentParser(description)
     p.add_argument(
-        "-v", "--verbose", required=False,
-        action="store_const", dest="log_level",
-        const=logging.DEBUG, default=logging.INFO,
-        help="Increase the verbosity of output")
-    p.add_argument(
         "--keys", default=os.path.abspath(os.path.join(here, "test")),
         help="Set a path to the keypair directory.")
     p.add_argument(
@@ -141,39 +139,16 @@ def parser(description="SEFT Publisher service."):
     p.add_argument(
         "--test", default=False, action="store_true",
         help="Configure for functional test.")
-    p.add_argument(
-        "--log", default=None, dest="log_path",
-        help="Set a file path for log output")
     return p
 
 
-def configure_log(args, name="sdx.seft"):
-    log = logging.getLogger(name)
-    log.setLevel(args.log_level)
-
-    formatter = logging.Formatter(
-        "%(asctime)s %(levelname)-7s %(name)s|%(message)s")
-    ch = logging.StreamHandler()
-
-    if args.log_path is None:
-        ch.setLevel(args.log_level)
-    else:
-        fh = WatchedFileHandler(args.log_path)
-        fh.setLevel(args.log_level)
-        fh.setFormatter(formatter)
-        log.addHandler(fh)
-        ch.setLevel(logging.WARNING)
-
-    ch.setFormatter(formatter)
-    log.addHandler(ch)
-    log = logging.getLogger("pika")
-    log.setLevel(args.log_level)
-    log.addHandler(ch)
-    return name
-
-
 def main(args):
-    log = logging.getLogger(configure_log(args))
+    name = "sdx-seft-publisher"
+    logger_initial_config(
+        service_name=name,
+        log_level=os.getenv("LOGGING_LEVEL", "DEBUG")
+    )
+    log = logging.getLogger(name)
     log.info("Launched in {0}.".format(os.getcwd()))
 
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
@@ -196,7 +171,7 @@ def main(args):
     app.listen(args.port)
 
     # Create the scheduled task
-    interval_ms = 30 * 60 * 1000
+    interval_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 30 * 60 * 1000))
     task = Task(args, services)
     sched = tornado.ioloop.PeriodicCallback(
         task.transfer_files,

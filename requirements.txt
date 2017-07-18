@@ -2,4 +2,4 @@ cryptography==1.9
 tornado==4.5.1
 PyJWT==1.4.0
 pika==0.10.0
-pyftpdlib==1.5.2
+sdx-common>=0.7.0
