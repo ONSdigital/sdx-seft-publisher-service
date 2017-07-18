@@ -13,10 +13,10 @@ dev: check-env
 build:
 	pip3 install -r requirements.txt
 
-test: dev
+test:
 	pip3 install -r test_requirements.txt
 	flake8 --exclude lib .
-	python3 -m unittest */tests/*.py
+	python3 -m unittest app/test/test_*.py
 
 start:
 	./app/main.py
