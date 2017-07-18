@@ -3,7 +3,6 @@
 
 import argparse
 import base64
-from collections import deque
 from collections import OrderedDict
 import datetime
 import json
@@ -38,12 +37,16 @@ class Task:
 
     @staticmethod
     def amqp_params(services):
-        log = logging.getLogger("sdx.seft.amqp")
         try:
             uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
         except (IndexError, KeyError):
-            uri = os.getenv["RABBIT_URL"]
-        log.info(uri)
+            uri = "amqp://{user}:{password}@{hostname}:{port}/{vhost}".format(
+                hostname=os.getenv("SEFT_RABBITMQ_HOST", "localhost"),
+                port=os.getenv("SEFT_RABBITMQ_PORT", 5672),
+                user=os.getenv("SEFT_RABBITMQ_DEFAULT_USER", "rabbit"),
+                password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "rabbit"),
+                vhost=os.getenv("SEFT_RABBITMQ_DEFAULT_VHOST", "%2f")
+            )
         return {
             "amqp_url": uri,
             "queue_name": "Seft.Responses",
@@ -77,10 +80,10 @@ class Task:
     @staticmethod
     def ftp_params(services):
         return {
-            "user": "testuser",
-            "password": "password",
-            "host": "127.0.0.1",
-            "port": 2121,
+            "user": os.getenv("SEFT_FTP_USER", "user"),
+            "password": os.getenv("SEFT_FTP_PASS", "password"),
+            "host": os.getenv("SEFT_FTP_HOST", "127.0.0.1"),
+            "port": os.getenv("SEFT_FTP_PORT", 2121),
         }
 
     def __init__(self, args, services):
@@ -95,7 +98,6 @@ class Task:
             return
 
         log.info("Looking for files...")
-        log.info(vars(self.args))
         worker = FTPWorker(**self.ftp_params(self.services))
         encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
         with worker as active:
