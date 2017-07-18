@@ -7,7 +7,6 @@ from collections import OrderedDict
 import datetime
 import json
 import logging
-from logging.handlers import WatchedFileHandler
 import multiprocessing
 import os.path
 import sys
