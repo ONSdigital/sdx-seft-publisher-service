@@ -12,7 +12,6 @@ import unittest
 
 # To run test in CF
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-print(sys.path)
 
 from ftpclient import FTPWorker
 import localserver
@@ -20,8 +19,8 @@ import localserver
 """
 To run this test in a Cloudfoundry environment:
 
-$ cf push seft-publisher-test
-$ cf logs seft-publisher-test --recent
+$ cf push seft-publisher-unittest
+$ cf logs seft-publisher-unittest --recent
 
 """
 

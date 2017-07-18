@@ -1,6 +1,5 @@
 import base64
 
-import jwt
 from cryptography.hazmat.backends.openssl.backend import backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -8,6 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.exceptions import AlreadyFinalized, InvalidKey, InvalidSignature, InvalidTag
 from cryptography.exceptions import UnsupportedAlgorithm, InternalError, NotYetFinalized
+import jwt
 
 from app import create_and_wrap_logger
 

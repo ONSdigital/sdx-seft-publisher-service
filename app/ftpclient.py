@@ -8,7 +8,7 @@ from publisher import Job
 
 class FTPWorker:
 
-    def __init__(self, user, password, host, port, timeout=30, **kwargs):
+    def __init__(self, user, password, host, port, timeout=30):
         self.log = logging.getLogger("sdx.FTPWorker")
         self.user, self.password = user, password
         self.host, self.port = host, port
