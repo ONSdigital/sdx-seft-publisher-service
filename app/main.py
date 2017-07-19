@@ -107,14 +107,14 @@ class Task:
                 return
 
             for job in active.get(active.filenames):
-                if job.fn not in self.recent:
+                if job.filename not in self.recent:
                     data = job._asdict()
-                    data["contents"] = base64.standard_b64encode(job.contents).decode("ascii")
+                    data["file"] = base64.standard_b64encode(job.file).decode("ascii")
                     data["ts"] = job.ts.isoformat()
                     payload = encrypter.encrypt(data)
                     msg_id = self.publisher.publish_message(payload)
-                    self.recent[job.fn] = (job.ts, msg_id)
-                    log.info("Published {0}".format(job.fn))
+                    self.recent[job.filename] = (job.ts, msg_id)
+                    log.info("Published {0}".format(job.filename))
 
             now = datetime.datetime.utcnow()
             for fn, (ts, msg_id) in self.recent.copy().items():

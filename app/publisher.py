@@ -4,7 +4,7 @@ import logging
 import pika
 import pika.adapters
 
-Job = namedtuple("Job", ["ts", "fn", "contents"])
+Job = namedtuple("Job", ["ts", "filename", "contents"])
 
 
 class DurableTopicPublisher:
