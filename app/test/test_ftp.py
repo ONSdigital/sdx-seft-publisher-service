@@ -21,14 +21,6 @@ except ImportError:
     # Travis CI
     from app.test.localserver import serve
 
-"""
-To run this test in a Cloudfoundry environment:
-
-$ cf push seft-publisher-unittest
-$ cf logs seft-publisher-unittest --recent
-
-"""
-
 
 class NeedsTemporaryDirectory():
 

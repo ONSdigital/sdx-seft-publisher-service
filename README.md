@@ -16,11 +16,33 @@ _TBD_
 
 ## Configuration
 
-| Environment variable | Default | Description
-| -------------------- | ------- | -----------
-| PORT                 | -       | The port to bind to
+| Environment variable          | Default   | Description
+| --------------------          | -------   | -----------
+| PORT                          | -         | Service port
+| RAS_SEFT_PUBLIC_KEY           |           | Destination encryption key
+| SDX_SEFT_PRIVATE_KEY          |           | Local signing key
+| SDX_SEFT_PRIVATE_KEY_PASSWORD |           | Signing key password
+| SEFT_FTP_HOST                 | 127.0.0.1 | Source host
+| SEFT_FTP_INTERVAL_MS          | 1800000   | Source polling interval (milliseconds)
+| SEFT_FTP_PASS                 |           | Source password
+| SEFT_FTP_PORT                 | 2121      | Source port
+| SEFT_FTP_USER                 |           | Source user
+| SEFT_RABBITMQ_DEFAULT_PASS    |           |
+| SEFT_RABBITMQ_DEFAULT_USER    |           |
+| SEFT_RABBITMQ_DEFAULT_VHOST   |           |
+| SEFT_RABBITMQ_HOST            |           |
+| SEFT_RABBITMQ_PORT            |           |
 
 _TBC_
+
+## Test
+
+To run the tests in a Cloudfoundry environment:
+
+```shell
+$ cf push seft-publisher-unittest
+$ cf logs seft-publisher-unittest --recent
+```
 
 ### License
 
