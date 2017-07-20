@@ -104,7 +104,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         time.sleep(5)
         worker = FTPWorker(**self.params)
         with worker as active:
-            items = set(i.contents for i in active.get(active.filenames))
+            items = set(i.file for i in active.get(active.filenames))
             self.assertEqual(len(self.files), len(items))
             self.assertEqual(set(self.files.values()), items)
 
@@ -121,7 +121,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         time.sleep(5)
         worker = FTPWorker(**self.params)
         with worker as active:
-            items = set(i.contents for i in active.get(active.filenames))
+            items = set(i.file for i in active.get(active.filenames))
             self.assertEqual(len(self.files), len(items))
             self.assertEqual(set(self.files.values()), items)
 
