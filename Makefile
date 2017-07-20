@@ -1,6 +1,6 @@
 .PHONY: build clean test
 
-build:
+build: clean
 	git clone -b 0.7.0 https://github.com/ONSdigital/sdx-common.git
 	pip3 install ./sdx-common
 	pip3 install -r requirements.txt
