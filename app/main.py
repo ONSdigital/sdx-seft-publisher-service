@@ -7,11 +7,8 @@ from collections import OrderedDict
 import datetime
 import json
 import logging
-import multiprocessing
 import os.path
 import sys
-import tempfile
-import time
 
 from sdx.common.logger_config import logger_initial_config
 import tornado.ioloop
@@ -20,7 +17,6 @@ import tornado.web
 from encrypter import Encrypter
 from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
-import test.localserver
 
 
 class StatusService(tornado.web.RequestHandler):
@@ -141,9 +137,6 @@ def parser(description="SEFT Publisher service."):
     p.add_argument(
         "--port", type=int, default=int(os.getenv("PORT", "8080")),
         help="Set a port for the service.")
-    p.add_argument(
-        "--test", default=False, action="store_true",
-        help="Configure for functional test.")
     return p
 
 
@@ -157,19 +150,6 @@ def main(args):
     log.info("Launched in {0}.".format(os.getcwd()))
 
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
-
-    if args.test:
-        locn = tempfile.mkdtemp()
-        with tempfile.NamedTemporaryFile(suffix=".xls", dir=locn, delete=False) as f:
-            f.write(os.urandom(4096))
-
-        server = multiprocessing.Process(
-            target=test.localserver.serve,
-            args=(locn,),
-            kwargs=Task.ftp_params(services)
-        )
-        server.start()
-        time.sleep(5)
 
     # Create the API service
     app = make_app()
