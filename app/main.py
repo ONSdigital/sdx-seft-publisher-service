@@ -37,6 +37,7 @@ class Task:
 
     @staticmethod
     def amqp_params(services):
+        queue = os.getenv("SEFT_PUBLISHER_RABBIT_QUEUE", "Seft.CollectionInstruments")
         try:
             uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
         except (IndexError, KeyError):
@@ -49,7 +50,7 @@ class Task:
             )
         return {
             "amqp_url": uri,
-            "queue_name": "Seft.Responses",
+            "queue_name": queue,
         }
 
     @staticmethod

@@ -1,5 +1,6 @@
 from collections import namedtuple
 import logging
+import os
 
 import pika
 import pika.adapters
@@ -9,7 +10,7 @@ Job = namedtuple("Job", ["ts", "filename", "file"])
 
 class DurableTopicPublisher:
 
-    EXCHANGE = "message"
+    EXCHANGE = os.getenv("SEFT_RABBIT_EXCHANGE", 'message')
     PUBLISH_INTERVAL = 1
     ROUTING_KEY = "JWT"
 
