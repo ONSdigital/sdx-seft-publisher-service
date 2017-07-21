@@ -8,16 +8,18 @@ from publisher import Job
 
 class FTPWorker:
 
-    def __init__(self, user, password, host, port, timeout=30):
+    def __init__(self, user, password, host, port, working_directory, timeout=30):
         self.log = logging.getLogger("sdx.FTPWorker")
         self.user, self.password = user, password
         self.host, self.port = host, port
         self.timeout = timeout
         self.ftp = FTP()
+        self.working_directory = working_directory
 
     def __enter__(self):
         try:
             self.ftp.connect(self.host, self.port, timeout=self.timeout)
+            self.ftp.cwd(self.working_directory)
         except Exception as e:
             self.log.warning(e)
             return None
