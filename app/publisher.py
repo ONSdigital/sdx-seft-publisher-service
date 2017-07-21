@@ -29,7 +29,7 @@ class DurableTopicPublisher:
         self.publishing = False
 
     def connect(self):
-        self.log.info("Connecting to %s", self._url)
+        self.log.info("Connecting...")
         return pika.adapters.TornadoConnection(
             pika.URLParameters(self._url),
             self.on_connection_open,
