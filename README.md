@@ -18,20 +18,22 @@ _TBD_
 
 | Environment variable          | Default   | Description
 | --------------------          | -------   | -----------
+| SEFT_RABBITMQ_HOST            | localhost |
+| SEFT_RABBITMQ_PORT            | 5672      |
+| SEFT_PUBLISHER_RABBIT_QUEUE   | `Seft.CollectionInstruments` | Outgoing queue to publish to
+| SEFT_RABBIT_EXCHANGE          | `message` | RabbitMQ exchange to use
 | PORT                          | -         | Service port
+| SEFT_FTP_HOST                 | 127.0.0.1 | Source host
+| SEFT_FTP_PORT                variables | 2121      | Source port
+| SEFT_FTP_USER                 | user      | Source user
+| SEFT_FTP_PASS                 | password  | Source password
 | RAS_SEFT_PUBLIC_KEY           |           | Destination encryption key
 | SDX_SEFT_PRIVATE_KEY          |           | Local signing key
 | SDX_SEFT_PRIVATE_KEY_PASSWORD |           | Signing key password
-| SEFT_FTP_HOST                 | 127.0.0.1 | Source host
 | SEFT_FTP_INTERVAL_MS          | 1800000   | Source polling interval (milliseconds)
-| SEFT_FTP_PASS                 |           | Source password
-| SEFT_FTP_PORT                 | 2121      | Source port
-| SEFT_FTP_USER                 |           | Source user
-| SEFT_RABBITMQ_DEFAULT_PASS    |           |
-| SEFT_RABBITMQ_DEFAULT_USER    |           |
-| SEFT_RABBITMQ_DEFAULT_VHOST   |           |
-| SEFT_RABBITMQ_HOST            |           |
-| SEFT_RABBITMQ_PORT            |           |
+| SEFT_RABBITMQ_DEFAULT_PASS    | rabbit    |
+| SEFT_RABBITMQ_DEFAULT_USER    | rabbit    |
+| SEFT_RABBITMQ_DEFAULT_VHOST   | `/`       |
 
 _TBC_
 
