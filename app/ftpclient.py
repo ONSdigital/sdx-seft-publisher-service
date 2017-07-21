@@ -12,9 +12,9 @@ class FTPWorker:
         self.log = logging.getLogger("sdx.FTPWorker")
         self.user, self.password = user, password
         self.host, self.port = host, port
+        self.working_directory = working_directory
         self.timeout = timeout
         self.ftp = FTP()
-        self.working_directory = working_directory
 
     def __enter__(self):
         try:
