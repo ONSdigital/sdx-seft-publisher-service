@@ -12,20 +12,20 @@ class FTPWorker:
         self.log = logging.getLogger("sdx.FTPWorker")
         self.user, self.password = user, password
         self.host, self.port = host, port
-        self.working_directory = working_directory
         self.timeout = timeout
+        self.working_directory = working_directory
         self.ftp = FTP()
 
     def __enter__(self):
         try:
             self.ftp.connect(self.host, self.port, timeout=self.timeout)
-            self.ftp.cwd(self.working_directory)
         except Exception as e:
             self.log.warning(e)
             return None
 
         try:
             self.ftp.login(user=self.user, passwd=self.password)
+            self.ftp.cwd(self.working_directory)
         except Exception as e:
             self.log.warning(e)
             return None

@@ -39,6 +39,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         "password": "password",
         "host": "0.0.0.0",
         "port": 2121,
+        "working_directory": ".",
     }
 
     def setUp(self):
