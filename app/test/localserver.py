@@ -48,7 +48,7 @@ class MyHandler(FTPHandler):
         os.remove(file)
 
 
-def serve(root, user, password, host, port):
+def serve(root, user, password, host, port, working_directory):
     authorizer = DummyAuthorizer()
     authorizer.add_user(user, password, homedir=root, perm="elradfmw")
     authorizer.add_anonymous(homedir=root)

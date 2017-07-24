@@ -39,6 +39,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         "password": "password",
         "host": "0.0.0.0",
         "port": 2121,
+        "working_directory": ".",
     }
 
     def setUp(self):
@@ -126,6 +127,17 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
             self.assertEqual(set(self.files.values()), items)
 
         server.terminate()
+
+    def test_path_names(self):
+        paths = [
+            '\\\\EDC_Templates',
+            '\\\\EDC_Templates\\',
+            '\\EDC_Templates',
+            '/EDC_Templates/',
+            'EDC_Templates',
+        ]
+
+        [self.assertEqual(FTPWorker.get_wd(path), 'EDC_Templates') for path in paths]
 
 if __name__ == "__main__":
     unittest.main()

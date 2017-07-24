@@ -83,6 +83,7 @@ class Task:
             "password": os.getenv("SEFT_FTP_PASS", "password"),
             "host": os.getenv("SEFT_FTP_HOST", "127.0.0.1"),
             "port": int(os.getenv("SEFT_FTP_PORT", 2121)),
+            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/")
         }
 
     def __init__(self, args, services):
