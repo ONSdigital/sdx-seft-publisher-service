@@ -2,18 +2,24 @@ import datetime
 from ftplib import FTP
 from io import BytesIO
 import logging
+from os import path
 
 from publisher import Job
 
 
 class FTPWorker:
 
+    @staticmethod
+    def get_wd(str_path):
+        p = path.join(*str_path.split('\\'))
+        return path.basename(path.normpath(p))
+
     def __init__(self, user, password, host, port, working_directory, timeout=30):
         self.log = logging.getLogger("sdx.FTPWorker")
         self.user, self.password = user, password
         self.host, self.port = host, port
         self.timeout = timeout
-        self.working_directory = working_directory
+        self.working_directory = self.get_wd(working_directory)
         self.ftp = FTP()
 
     def __enter__(self):
