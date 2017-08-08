@@ -74,7 +74,6 @@ class Task:
         rv = {
             "public_key": pub_key,
             "private_key": priv_key,
-            "private_key_password": os.getenv("SDX_SEFT_PRIVATE_KEY_PASSWORD", None),
         }
         return rv
 
