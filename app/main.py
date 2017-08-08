@@ -52,8 +52,10 @@ class Task:
     @staticmethod
     def encrypt_params(services, locn="."):
         log = logging.getLogger("sdx-seft-publisher")
-        pub_fp = os.getenv("RAS_SEFT_PUBLIC_KEY", os.path.join(locn, "test_no_password.pub"))
-        priv_fp = os.getenv("SDX_SEFT_PRIVATE_KEY", os.path.join(locn, "test_no_password.pem"))
+        pub_fp = os.getenv("RAS_SEFT_PUBLISHER_PUBLIC_KEY",
+                           os.path.join(locn, "test_no_password.pub"))
+        priv_fp = os.getenv("SDX_SEFT_PUBLISHER_PRIVATE_KEY",
+                            os.path.join(locn, "test_no_password.pem"))
         priv_key = None
         pub_key = None
         try:
@@ -172,6 +174,7 @@ def main(args):
     loop.call_later(6, task.transfer_files)
     task.publisher.run()
     return 0
+
 
 if __name__ == "__main__":
     p = parser()
