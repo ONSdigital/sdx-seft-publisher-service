@@ -39,7 +39,8 @@ class Encrypter (object):
         return value
 
     def _jwe_protected_header(self):
-        return self._base_64_encode(b'{"alg":"RSA-OAEP","enc":"A256GCM", "kid":' + KID + '"}')
+        protected_header = '{"alg":"RSA-OAEP","enc":"A256GCM","kid":"' + KID + '"}'
+        return self._base_64_encode(protected_header.encode())
 
     def _encrypted_key(self, cek):
         ciphertext = self.public_key.encrypt(
