@@ -7,8 +7,6 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import jwt
 
-KID = 'SEFT'
-
 # TODO again this could be moved to the common library
 
 
@@ -39,7 +37,7 @@ class Encrypter (object):
         return value
 
     def _jwe_protected_header(self):
-        protected_header = '{"alg":"RSA-OAEP","enc":"A256GCM","kid":"' + KID + '"}'
+        protected_header = '{"alg":"RSA-OAEP","enc":"A256GCM","kid":"SEFT-PRIVATE"}'
         return self._base_64_encode(protected_header.encode())
 
     def _encrypted_key(self, cek):
@@ -64,7 +62,7 @@ class Encrypter (object):
 
     def _encode_and_signed(self, payload):
         return jwt.encode(
-            payload, self.private_key, algorithm="RS256", headers={'kid': KID, 'typ': 'jwt'}
+            payload, self.private_key, algorithm="RS256", headers={'kid': 'SEFT-PUBLIC', 'typ': 'jwt'}
         )
 
     def encrypt(self, json):
