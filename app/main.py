@@ -9,6 +9,7 @@ import json
 import logging
 import os.path
 import sys
+import uuid
 
 from sdx.common.logger_config import logger_initial_config
 import tornado.ioloop
@@ -111,7 +112,10 @@ class Task:
                     data["file"] = base64.standard_b64encode(job.file).decode("ascii")
                     data["ts"] = job.ts.isoformat()
                     payload = encrypter.encrypt(data)
-                    msg_id = self.publisher.publish_message(payload)
+
+                    headers = {'tx_id': str(uuid.uuid4())}
+
+                    msg_id = self.publisher.publish_message(payload, headers=headers)
                     self.recent[job.filename] = (job.ts, msg_id)
                     log.info("Published {0}".format(job.filename))
 
