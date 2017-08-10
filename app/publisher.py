@@ -62,14 +62,8 @@ class DurableTopicPublisher:
         self._nacked = 0
         self._message_number = 0
 
-        # This is the old connection IOLoop instance, stop its ioloop
-        self._connection.ioloop.stop()
-
         # Create a new connection
         self._connection = self.connect()
-
-        # There is now a new connection, needs a new ioloop to run
-        self._connection.ioloop.start()
 
     def open_channel(self):
         self.log.info("Creating a new channel")
