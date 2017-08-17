@@ -52,7 +52,7 @@ class Task:
 
     @staticmethod
     def encrypt_params(services, locn="."):
-        log = logging.getLogger("sdx-seft-publisher")
+        log = logging.getLogger("sdx-seft-publisher-service")
         pub_fp = os.getenv("RAS_SEFT_PUBLISHER_PUBLIC_KEY",
                            os.path.join(locn, "test_no_password.pub"))
         priv_fp = os.getenv("SDX_SEFT_PUBLISHER_PRIVATE_KEY",
@@ -94,7 +94,7 @@ class Task:
         self.publisher = DurableTopicPublisher(**self.amqp_params(services))
 
     def transfer_files(self):
-        log = logging.getLogger("sdx-seft-publisher")
+        log = logging.getLogger("sdx-seft-publisher-service")
         if not self.publisher.publishing:
             log.warning("Publisher is not ready.")
             return
@@ -147,7 +147,7 @@ def parser(description="SEFT Publisher service."):
 
 
 def main(args):
-    name = "sdx-seft-publisher"
+    name = "sdx-seft-publisher-service"
     logger_initial_config(
         service_name=name,
         log_level=os.getenv("LOGGING_LEVEL", "DEBUG")
