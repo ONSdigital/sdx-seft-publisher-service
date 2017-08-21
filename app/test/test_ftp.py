@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 
 # To run test in CF
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -30,6 +31,25 @@ class NeedsTemporaryDirectory():
 
     def tearDown(self):
         shutil.rmtree(self.root)
+
+
+class ExceptionTests(unittest.TestCase):
+
+    params = {
+        "user": "testuser",
+        "password": "password",
+        "host": "0.0.0.0",
+        "port": 2121,
+        "working_directory": ".",
+    }
+
+    @unittest.mock.patch("ftpclient.FTP.connect")
+    def test_error_on_connect(self, ftp_mock):
+        ftp_mock.side_effect = Exception("Connect failure")
+        worker = FTPWorker(**self.params)
+        with worker as fault:
+            print(worker)
+            print(worker.ftp.connect)
 
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
