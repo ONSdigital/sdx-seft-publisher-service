@@ -48,7 +48,7 @@ class ExceptionTests(unittest.TestCase):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker)
-            connect_mock.assert_called_once()
+            connect_mock.assert_called_once_with()
 
     @unittest.mock.patch("ftpclient.FTP.connect")
     @unittest.mock.patch("ftpclient.FTP.login", side_effect=Exception("Login failure"))
@@ -56,13 +56,13 @@ class ExceptionTests(unittest.TestCase):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker)
-            login_mock.assert_called_once()
+            login_mock.assert_called_once_with()
 
     @unittest.mock.patch("ftpclient.FTP.nlst", side_effect=Exception("List failure"))
     def test_error_on_nlist(self, nlst_mock):
         worker = FTPWorker(**self.params)
         self.assertFalse(worker.filenames)
-        nlst_mock.assert_called_once()
+        nlst_mock.assert_called_once_with()
 
     @unittest.mock.patch("ftpclient.FTP.connect")
     @unittest.mock.patch("ftpclient.FTP.login")
@@ -72,7 +72,7 @@ class ExceptionTests(unittest.TestCase):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker.delete("data.xls"))
-            delete_mock.assert_called_once()
+            delete_mock.assert_called_once_with()
 
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
