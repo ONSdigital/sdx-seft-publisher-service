@@ -62,7 +62,7 @@ class ExceptionTests(unittest.TestCase):
     def test_error_on_nlist(self, nlst_mock):
         worker = FTPWorker(**self.params)
         self.assertFalse(worker.filenames)
-        nlst_mock.assert_called_once_with("0.0.0.0", 2121, timeout=30)
+        nlst_mock.assert_called_once_with()
 
     @unittest.mock.patch("ftpclient.FTP.connect")
     @unittest.mock.patch("ftpclient.FTP.login")
