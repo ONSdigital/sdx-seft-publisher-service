@@ -58,6 +58,12 @@ class ExceptionTests(unittest.TestCase):
             self.assertFalse(broker)
             login_mock.assert_called_once()
 
+    @unittest.mock.patch("ftpclient.FTP.nlst", side_effect=Exception("List failure"))
+    def test_error_on_nlist(self, nlst_mock):
+        worker = FTPWorker(**self.params)
+        self.assertFalse(worker.filenames)
+        nlst_mock.assert_called_once()
+
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
