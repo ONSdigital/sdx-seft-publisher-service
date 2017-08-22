@@ -43,13 +43,20 @@ class ExceptionTests(unittest.TestCase):
         "working_directory": ".",
     }
 
-    @unittest.mock.patch("ftpclient.FTP.connect")
-    def test_error_on_connect(self, ftp_mock):
-        ftp_mock.side_effect = Exception("Connect failure")
+    @unittest.mock.patch("ftpclient.FTP.connect", side_effect=Exception("Connect failure"))
+    def test_error_on_connect(self, connect_mock):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker)
-            ftp_mock.assert_called_once()
+            connect_mock.assert_called_once()
+
+    @unittest.mock.patch("ftpclient.FTP.connect")
+    @unittest.mock.patch("ftpclient.FTP.login", side_effect=Exception("Login failure"))
+    def test_error_on_login(self, connect_mock, login_mock):
+        worker = FTPWorker(**self.params)
+        with worker as broker:
+            self.assertFalse(broker)
+            login_mock.assert_called_once()
 
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
