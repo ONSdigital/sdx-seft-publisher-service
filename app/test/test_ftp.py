@@ -47,9 +47,9 @@ class ExceptionTests(unittest.TestCase):
     def test_error_on_connect(self, ftp_mock):
         ftp_mock.side_effect = Exception("Connect failure")
         worker = FTPWorker(**self.params)
-        with worker as fault:
-            print(worker)
-            print(worker.ftp.connect)
+        with worker as broker:
+            self.assertFalse(broker)
+            ftp_mock.assert_called_once()
 
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
