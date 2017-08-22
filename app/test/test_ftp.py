@@ -64,6 +64,16 @@ class ExceptionTests(unittest.TestCase):
         self.assertFalse(worker.filenames)
         nlst_mock.assert_called_once()
 
+    @unittest.mock.patch("ftpclient.FTP.connect")
+    @unittest.mock.patch("ftpclient.FTP.login")
+    @unittest.mock.patch("ftpclient.FTP.cwd")
+    @unittest.mock.patch("ftpclient.FTP.delete", side_effect=Exception("Delete failure"))
+    def test_error_on_delete(self, connect_mock, login_mock, cwd_mock, delete_mock):
+        worker = FTPWorker(**self.params)
+        with worker as broker:
+            self.assertFalse(broker.delete("data.xls"))
+            delete_mock.assert_called_once()
+
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
