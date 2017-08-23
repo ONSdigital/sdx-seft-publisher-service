@@ -12,7 +12,7 @@ class DurableTopicPublisher:
 
     EXCHANGE = os.getenv("SEFT_RABBIT_EXCHANGE", 'message')
     PUBLISH_INTERVAL = 1
-    ROUTING_KEY = os.getenv("SDX_SEFT_PUBLISHER_ROUTING_KEY")
+    ROUTING_KEY = "JWT"
 
     def __init__(self, amqp_url, queue_name, log=None, **kwargs):
         self.log = log or logging.getLogger("sdx.seft")
@@ -100,7 +100,7 @@ class DurableTopicPublisher:
 
     def on_queue_declareok(self, method_frame):
         self.log.info(
-            "Binding exchange %s to queue %s with  routing key %s",
+            "Binding %s to %s with %s",
             self.EXCHANGE, self.queue_name, self.ROUTING_KEY
         )
         self._channel.queue_bind(self.on_bindok, self.queue_name,
