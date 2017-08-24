@@ -4,7 +4,7 @@ from io import BytesIO
 import logging
 from os import path
 
-from publisher import Job
+from app.publisher import Job
 
 
 class FTPWorker:
@@ -57,6 +57,18 @@ class FTPWorker:
             else:
                 yield Job(datetime.datetime.utcnow(), fp, buf.getvalue())
                 filenames.remove(fp)
+
+    def getfile(self, filename):
+
+        buf = BytesIO()
+        try:
+            self.ftp.retrbinary("RETR {0}".format(filename), callback=buf.write)
+            return Job(datetime.datetime.utcnow(), filename, buf.getvalue())
+        except Exception as e:
+            self.log.warning(e)
+            return None
+
+
 
     def delete(self, filename):
         try:
