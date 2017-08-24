@@ -38,7 +38,7 @@ class ExceptionTests(unittest.TestCase):
     params = {
         "user": "testuser",
         "password": "password",
-        "host": "0.0.0.0",
+        "host": "127.0.0.1",
         "port": 2121,
         "working_directory": ".",
     }
@@ -48,7 +48,7 @@ class ExceptionTests(unittest.TestCase):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker)
-            connect_mock.assert_called_once_with("0.0.0.0", 2121, timeout=30)
+            connect_mock.assert_called_once_with("127.0.0.1", 2121, timeout=30)
 
     @unittest.mock.patch("ftpclient.FTP.connect")
     @unittest.mock.patch("ftpclient.FTP.login", side_effect=Exception("Login failure"))
@@ -56,7 +56,7 @@ class ExceptionTests(unittest.TestCase):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker)
-            login_mock.assert_called_once_with("0.0.0.0", 2121, timeout=30)
+            login_mock.assert_called_once_with("127.0.0.1", 2121, timeout=30)
 
     @unittest.mock.patch("ftpclient.FTP.nlst", side_effect=Exception("List failure"))
     def test_error_on_nlist(self, nlst_mock):
@@ -72,7 +72,7 @@ class ExceptionTests(unittest.TestCase):
         worker = FTPWorker(**self.params)
         with worker as broker:
             self.assertFalse(broker.delete("data.xls"))
-            delete_mock.assert_called_once_with("0.0.0.0", 2121, timeout=30)
+            delete_mock.assert_called_once_with("127.0.0.1", 2121, timeout=30)
 
 
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
@@ -80,7 +80,7 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
     params = {
         "user": "testuser",
         "password": "password",
-        "host": "0.0.0.0",
+        "host": "127.0.0.1",
         "port": 2121,
         "working_directory": ".",
     }
