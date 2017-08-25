@@ -11,13 +11,15 @@ import os.path
 import sys
 import uuid
 
+from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit.exceptions import PublishMessageError
 from sdx.common.logger_config import logger_initial_config
 import tornado.ioloop
 import tornado.web
 
-from encrypter import Encrypter
-from ftpclient import FTPWorker
-from publisher import DurableTopicPublisher
+from app.encrypter import Encrypter
+from app.ftpclient import FTPWorker
+from app.publisher import DurableTopicPublisher
 
 
 class StatusService(tornado.web.RequestHandler):
@@ -41,8 +43,8 @@ class Task:
             uri = "amqp://{user}:{password}@{hostname}:{port}/{vhost}".format(
                 hostname=os.getenv("SEFT_RABBITMQ_HOST", "localhost"),
                 port=os.getenv("SEFT_RABBITMQ_PORT", 5672),
-                user=os.getenv("SEFT_RABBITMQ_DEFAULT_USER", "rabbit"),
-                password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "rabbit"),
+                user=os.getenv("SEFT_RABBITMQ_DEFAULT_USER", "guest"),
+                password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "guest"),
                 vhost=os.getenv("SEFT_RABBITMQ_DEFAULT_VHOST", "%2f")
             )
         return {
@@ -81,23 +83,24 @@ class Task:
     @staticmethod
     def ftp_params(services):
         return {
-            "user": os.getenv("SEFT_FTP_USER", "user"),
-            "password": os.getenv("SEFT_FTP_PASS", "password"),
+            "user": os.getenv("SEFT_FTP_USER", "ons"),
+            "password": os.getenv("SEFT_FTP_PASS", "ons"),
             "host": os.getenv("SEFT_FTP_HOST", "127.0.0.1"),
-            "port": int(os.getenv("SEFT_FTP_PORT", 2121)),
-            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/")
+            "port": int(os.getenv("SEFT_FTP_PORT", 2021)),
+            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", ".")
         }
 
     def __init__(self, args, services):
         self.args = args
         self.services = services
-        self.publisher = DurableTopicPublisher(**self.amqp_params(services))
+        amqp_details = self.amqp_params(services)
+        self.publisher = QueuePublisher(urls=[amqp_details.get('amqp_url')], queue=amqp_details.get('queue_name'))
 
     def transfer_files(self):
         log = logging.getLogger("sdx-seft-publisher-service")
-        if not self.publisher.publishing:
-            log.warning("Publisher is not ready.")
-            return
+        # if not self.publisher.publishing:
+        #     log.warning("Publisher is not ready.")
+        #     return
 
         log.info("Looking for files...")
         worker = FTPWorker(**self.ftp_params(self.services))
@@ -106,26 +109,34 @@ class Task:
             if not active:
                 return
 
-            for job in active.get(active.filenames):
-                if job.filename not in self.recent:
-                    data = job._asdict()
-                    data["file"] = base64.standard_b64encode(job.file).decode("ascii")
-                    data["ts"] = job.ts.isoformat()
-                    payload = encrypter.encrypt(data)
+            try:
+                job = active.get_file(active.filenames.pop())
 
-                    headers = {'tx_id': str(uuid.uuid4())}
+                data = job._asdict()
+                data["file"] = base64.standard_b64encode(job.file).decode("ascii")
+                data["ts"] = job.ts.isoformat()
+                payload = encrypter.encrypt(data)
 
-                    msg_id = self.publisher.publish_message(payload, headers=headers)
-                    self.recent[job.filename] = (job.ts, msg_id)
+                headers = {'tx_id': str(uuid.uuid4())}
+
+                try:
+                    self.publisher.publish_message(payload, headers=headers)
+                except PublishMessageError:
+                    log.info("Failed to publish {0}, retrying".format(job.filename))
+                else:
                     log.info("Published {0}".format(job.filename))
+                    active.delete(job.filename)
+                    log.info("Deleted {0}".format(job.filename))
+            except IndexError:
+                pass
 
-            now = datetime.datetime.utcnow()
-            for fn, (ts, msg_id) in self.recent.copy().items():
-                if msg_id not in self.publisher._deliveries:
-                    active.delete(fn)
-                    log.info("Deleted {0}".format(fn))
-                if now - ts > datetime.timedelta(hours=1):
-                    del self.recent[fn]
+            # now = datetime.datetime.utcnow()
+            # for fn, (ts, msg_id) in self.recent.copy().items():
+            #     if msg_id not in self.publisher._deliveries:
+            #         active.delete(fn)
+            #         log.info("Deleted {0}".format(fn))
+            #     if now - ts > datetime.timedelta(hours=1):
+            #         del self.recent[fn]
 
 
 def make_app():
@@ -162,7 +173,7 @@ def main(args):
     app.listen(args.port)
 
     # Create the scheduled task
-    interval_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 30 * 60 * 1000))
+    interval_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 1000))
     task = Task(args, services)
     sched = tornado.ioloop.PeriodicCallback(
         task.transfer_files,
@@ -175,7 +186,7 @@ def main(args):
     # Perform the first transfer immediately
     loop = tornado.ioloop.IOLoop.current()
     loop.call_later(6, task.transfer_files)
-    task.publisher.run()
+    loop.start()
     return 0
 
 
