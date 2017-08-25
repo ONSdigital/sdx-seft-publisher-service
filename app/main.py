@@ -29,7 +29,7 @@ class HealthCheckService(tornado.web.RequestHandler):
         if self.worker.check():
             self.set_status(200)
         else:
-            self.send_error(408)
+            self.send_error(410)
 
 
 class StatusService(tornado.web.RequestHandler):
