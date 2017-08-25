@@ -97,6 +97,22 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
             os.write(fd, content)
             os.close(fd)
 
+    def test_server_check_negative(self):
+        worker = FTPWorker(**self.params)
+        self.assertFalse(worker.check())
+
+    def test_server_check_positive(self):
+        server = multiprocessing.Process(
+            target=serve,
+            args=(self.root,),
+            kwargs=self.params
+        )
+        server.start()
+        time.sleep(5)
+        worker = FTPWorker(**self.params)
+        self.assertTrue(worker.check())
+        server.terminate()
+
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server_delete(self):
         server = multiprocessing.Process(
