@@ -20,6 +20,18 @@ from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
 
 
+class HealthCheckService(tornado.web.RequestHandler):
+
+    def initialize(self, services):
+        self.worker = FTPWorker(**Task.ftp_params(services))
+
+    def get(self):
+        if self.worker.check():
+            self.set_status(200)
+        else:
+            self.send_error(408)
+
+
 class StatusService(tornado.web.RequestHandler):
 
     def initialize(self, work):
@@ -130,7 +142,8 @@ class Task:
 
 def make_app():
     return tornado.web.Application([
-        (r"/recent", StatusService, {"work": Task}),
+        ("/healthcheck", HealthCheckService, {"services": Task}),
+        ("/recent", StatusService, {"work": Task}),
     ])
 
 
@@ -158,7 +171,7 @@ def main(args):
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
 
     # Create the API service
-    app = make_app()
+    app = make_app(services)
     app.listen(args.port)
 
     # Create the scheduled task
