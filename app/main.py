@@ -124,7 +124,7 @@ class Task:
         self.args = args
         self.services = services
         self.publisher = DurableTopicPublisher(**self.amqp_params(services))
-        self.executor = ThreadPoolExecutor()
+        self.executor = ThreadPoolExecutor(max_workers=4)
         self.rabbit_check = None
         self.ftp_check = None
 
