@@ -4,6 +4,7 @@
 import argparse
 import base64
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import json
 import logging
@@ -14,7 +15,7 @@ import uuid
 from sdx.common.logger_config import logger_initial_config
 import tornado.ioloop
 import tornado.web
-from tornado.httpclient import HTTPClient, HTTPError
+from tornado.httpclient import AsyncHTTPClient, HTTPError
 
 from encrypter import Encrypter
 from ftpclient import FTPWorker
@@ -23,33 +24,31 @@ from publisher import DurableTopicPublisher
 
 class HealthCheckService(tornado.web.RequestHandler):
 
-    def initialize(self, services):
-        self.ftp = FTPWorker(**Task.ftp_params(services))
-        self.amqp_params = Task.amqp_params(services)
+    def initialize(self, task):
+        self.task = task
 
     def get(self):
-        http_client = HTTPClient()
-        try:
-            http_client.fetch(self.ampq_params["check"])
-        except HTTPError:
-            # HTTPError is raised for non-200 responses
-            self.send_error(410)
-        except Exception:
-            # Possible IOError, etc
-            self.send_error(410)
-        finally:
-            http_client.close()
+        if self.task.rabbit_check.done():
+            try:
+                self.task.rabbit_check.result()
+            except HTTPError:
+                # HTTPError is raised for non-200 responses
+                self.send_error(410)
+            except Exception:
+                # Possible IOError, etc
+                self.send_error(410)
 
-        if self.ftp.check():
-            self.set_status(200)
-        else:
-            self.send_error(410)
+        if self.task.ftp_check.done():
+            if self.ftp.check():
+                self.set_status(200)
+            else:
+                self.send_error(410)
 
 
 class StatusService(tornado.web.RequestHandler):
 
-    def initialize(self, work):
-        self.recent = {n: v for n, v in enumerate(Task.recent)}
+    def initialize(self, task):
+        self.recent = {n: v for n, v in enumerate(task.recent)}
 
     def get(self):
         self.write(self.recent)
@@ -120,6 +119,17 @@ class Task:
         self.args = args
         self.services = services
         self.publisher = DurableTopicPublisher(**self.amqp_params(services))
+        self.executor = ThreadPoolExecutor()
+        self.rabbit_check = None 
+        self.ftp_check = None 
+
+    def check_services(self, ftp_params={}):
+        http_client = AsyncHTTPClient()
+        params = self.amqp_params(self.services)
+        self.rabbit_check = http_client.fetch(params["check"])
+
+        ftp = FTPWorker(**(ftp_params or self.ftp_params(self.services)))
+        self.ftp_check = self.executor.submit(ftp.check)
 
     def transfer_files(self):
         log = logging.getLogger("sdx-seft-publisher-service")
@@ -156,10 +166,10 @@ class Task:
                     del self.recent[fn]
 
 
-def make_app(services):
+def make_app(task):
     return tornado.web.Application([
-        ("/healthcheck", HealthCheckService, {"services": services}),
-        ("/recent", StatusService, {"work": Task}),
+        ("/healthcheck", HealthCheckService, {"task": task}),
+        ("/recent", StatusService, {"task": task}),
     ])
 
 
@@ -185,21 +195,29 @@ def main(args):
     log.info("Launched in {0}.".format(os.getcwd()))
 
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
+    task = Task(args, services)
 
     # Create the API service
-    app = make_app(services)
+    app = make_app(task)
     app.listen(args.port)
 
     # Create the scheduled task
-    interval_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 30 * 60 * 1000))
-    task = Task(args, services)
-    sched = tornado.ioloop.PeriodicCallback(
+    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 30 * 60 * 1000))
+    transfer = tornado.ioloop.PeriodicCallback(
         task.transfer_files,
-        interval_ms,
+        transfer_ms,
     )
 
-    sched.start()
-    log.info("Scheduler started.")
+    transfer.start()
+    log.info("Transfer scheduled.")
+
+    check_ms = 5 * 60 * 1000
+    check = tornado.ioloop.PeriodicCallback(
+        task.check_services,
+        check_ms,
+    )
+    check.start()
+    log.info("Check scheduled.")
 
     # Perform the first transfer immediately
     loop = tornado.ioloop.IOLoop.current()
