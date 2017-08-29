@@ -31,10 +31,10 @@ class HealthCheckService(tornado.web.RequestHandler):
         http_client = HTTPClient()
         try:
             http_client.fetch(self.ampq_params["check"])
-        except HTTPError as e:
+        except HTTPError:
             # HTTPError is raised for non-200 responses
             self.send_error(410)
-        except Exception as e:
+        except Exception:
             # Possible IOError, etc
             self.send_error(410)
         finally:
