@@ -28,21 +28,26 @@ class HealthCheckService(tornado.web.RequestHandler):
         self.task = task
 
     def get(self):
+        rabbit_health = False
         if self.task.rabbit_check.done():
             try:
                 self.task.rabbit_check.result()
-            except HTTPError:
+            except (HTTPError, Exception):
                 # HTTPError is raised for non-200 responses
-                self.send_error(410)
-            except Exception:
-                # Possible IOError, etc
-                self.send_error(410)
-
-        if self.task.ftp_check.done():
-            if self.ftp.check():
-                self.set_status(200)
+                # Also possible IOError, etc
+                pass
             else:
-                self.send_error(410)
+                rabbit_health = True
+
+        ftp_health = self.task.ftp_check.done() and self.ftp_check.result()
+
+        self.write({
+            "status": rabbit_health and ftp_health,
+            "dependencies": {
+                "rabbitmq": rabbit_health,
+                "ftp": ftp_health
+            }
+        })
 
 
 class StatusService(tornado.web.RequestHandler):
@@ -120,8 +125,8 @@ class Task:
         self.services = services
         self.publisher = DurableTopicPublisher(**self.amqp_params(services))
         self.executor = ThreadPoolExecutor()
-        self.rabbit_check = None 
-        self.ftp_check = None 
+        self.rabbit_check = None
+        self.ftp_check = None
 
     def check_services(self, ftp_params={}):
         http_client = AsyncHTTPClient()
