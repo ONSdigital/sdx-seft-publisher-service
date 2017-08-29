@@ -1,3 +1,3 @@
 import os
 
-BATCH_SIZE = os.getenv("BATCH_SIZEL", "10")
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "10"))
