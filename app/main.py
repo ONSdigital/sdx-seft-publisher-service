@@ -156,9 +156,9 @@ class Task:
                     del self.recent[fn]
 
 
-def make_app():
+def make_app(services):
     return tornado.web.Application([
-        ("/healthcheck", HealthCheckService, {"services": Task}),
+        ("/healthcheck", HealthCheckService, {"services": services}),
         ("/recent", StatusService, {"work": Task}),
     ])
 
