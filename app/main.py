@@ -4,7 +4,6 @@
 import argparse
 import base64
 from collections import OrderedDict
-import datetime
 import json
 import logging
 import os.path
@@ -19,7 +18,7 @@ import tornado.web
 
 from app.encrypter import Encrypter
 from app.ftpclient import FTPWorker
-from app.publisher import DurableTopicPublisher
+from app.settings import BATCH_SIZE
 
 
 class StatusService(tornado.web.RequestHandler):
@@ -98,9 +97,6 @@ class Task:
 
     def transfer_files(self):
         log = logging.getLogger("sdx-seft-publisher-service")
-        # if not self.publisher.publishing:
-        #     log.warning("Publisher is not ready.")
-        #     return
 
         log.info("Looking for files...")
         worker = FTPWorker(**self.ftp_params(self.services))
@@ -110,33 +106,26 @@ class Task:
                 return
 
             try:
-                job = active.get_file(active.filenames.pop())
+                for _ in range(0, BATCH_SIZE):
+                    job = active.get_file(active.filenames.pop())
 
-                data = job._asdict()
-                data["file"] = base64.standard_b64encode(job.file).decode("ascii")
-                data["ts"] = job.ts.isoformat()
-                payload = encrypter.encrypt(data)
+                    data = job._asdict()
+                    data["file"] = base64.standard_b64encode(job.file).decode("ascii")
+                    data["ts"] = job.ts.isoformat()
+                    payload = encrypter.encrypt(data)
 
-                headers = {'tx_id': str(uuid.uuid4())}
+                    headers = {'tx_id': str(uuid.uuid4())}
 
-                try:
-                    self.publisher.publish_message(payload, headers=headers)
-                except PublishMessageError:
-                    log.info("Failed to publish {0}, retrying".format(job.filename))
-                else:
-                    log.info("Published {0}".format(job.filename))
-                    active.delete(job.filename)
-                    log.info("Deleted {0}".format(job.filename))
+                    try:
+                        self.publisher.publish_message(payload, headers=headers)
+                    except PublishMessageError:
+                        log.info("Failed to publish {0}".format(job.filename))
+                    else:
+                        log.info("Published {0}".format(job.filename))
+                        active.delete(job.filename)
+                        log.info("Deleted {0}".format(job.filename))
             except IndexError:
                 pass
-
-            # now = datetime.datetime.utcnow()
-            # for fn, (ts, msg_id) in self.recent.copy().items():
-            #     if msg_id not in self.publisher._deliveries:
-            #         active.delete(fn)
-            #         log.info("Deleted {0}".format(fn))
-            #     if now - ts > datetime.timedelta(hours=1):
-            #         del self.recent[fn]
 
 
 def make_app():

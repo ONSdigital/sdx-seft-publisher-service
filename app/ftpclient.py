@@ -1,10 +1,11 @@
+from collections import namedtuple
 import datetime
 from ftplib import FTP
 from io import BytesIO
 import logging
 from os import path
 
-from app.publisher import Job
+Job = namedtuple("Job", ["ts", "filename", "file"])
 
 
 class FTPWorker:
