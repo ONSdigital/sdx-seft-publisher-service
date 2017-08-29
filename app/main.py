@@ -14,6 +14,7 @@ import uuid
 from sdx.common.logger_config import logger_initial_config
 import tornado.ioloop
 import tornado.web
+from tornado.httpclient import HTTPClient, HTTPError
 
 from encrypter import Encrypter
 from ftpclient import FTPWorker
@@ -23,10 +24,23 @@ from publisher import DurableTopicPublisher
 class HealthCheckService(tornado.web.RequestHandler):
 
     def initialize(self, services):
-        self.worker = FTPWorker(**Task.ftp_params(services))
+        self.ftp = FTPWorker(**Task.ftp_params(services))
+        self.amqp_params = Task.amqp_params(services)
 
     def get(self):
-        if self.worker.check():
+        http_client = HTTPClient()
+        try:
+            http_client.fetch(self.ampq_params["check"])
+        except HTTPError as e:
+            # HTTPError is raised for non-200 responses
+            self.send_error(410)
+        except Exception as e:
+            # Possible IOError, etc
+            self.send_error(410)
+        finally:
+            http_client.close()
+
+        if self.ftp.check():
             self.set_status(200)
         else:
             self.send_error(410)
@@ -46,6 +60,7 @@ class Task:
 
     @staticmethod
     def amqp_params(services):
+        check = os.getenv("RABBIT_HEALTHCHECK_URL")
         queue = os.getenv("SEFT_PUBLISHER_RABBIT_QUEUE", "Seft.CollectionInstruments")
         try:
             uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
@@ -60,6 +75,7 @@ class Task:
         return {
             "amqp_url": uri,
             "queue_name": queue,
+            "check": check
         }
 
     @staticmethod
