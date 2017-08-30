@@ -128,12 +128,13 @@ class Task:
         self.rabbit_check = None
         self.ftp_check = None
 
-    def check_services(self, ftp_params={}, rabbit_url=""):
+    def check_services(self, ftp_params=None, rabbit_url=""):
+        ftp_params = ftp_params or self.ftp_params(self.services)
         http_client = AsyncHTTPClient()
         params = self.amqp_params(self.services)
         self.rabbit_check = http_client.fetch(rabbit_url or params["check"])
 
-        ftp = FTPWorker(**(ftp_params or self.ftp_params(self.services)))
+        ftp = FTPWorker(**ftp_params)
         self.ftp_check = self.executor.submit(ftp.check)
 
     def transfer_files(self):
