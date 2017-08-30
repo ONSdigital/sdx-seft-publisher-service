@@ -46,6 +46,18 @@ class FTPWorker:
             self.log.warning(e)
             return []
 
+    def check(self):
+        with self as connected:
+            try:
+                connected.ftp.voidcmd("NOOP")
+            except AttributeError:
+                return False
+            except Exception as e:
+                self.log.warning(e)
+                return False
+            else:
+                return True
+
     def get(self, filenames):
         while filenames:
             fp = filenames[0]

@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 
 # To run test in CF
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -32,12 +33,54 @@ class NeedsTemporaryDirectory():
         shutil.rmtree(self.root)
 
 
+class ExceptionTests(unittest.TestCase):
+
+    params = {
+        "user": "testuser",
+        "password": "password",
+        "host": "127.0.0.1",
+        "port": 2121,
+        "working_directory": ".",
+    }
+
+    @unittest.mock.patch("ftpclient.FTP.connect", side_effect=Exception("Connect failure"))
+    def test_error_on_connect(self, connect_mock):
+        worker = FTPWorker(**self.params)
+        with worker as broker:
+            self.assertFalse(broker)
+            connect_mock.assert_called_once_with("127.0.0.1", 2121, timeout=30)
+
+    @unittest.mock.patch("ftpclient.FTP.connect")
+    @unittest.mock.patch("ftpclient.FTP.login", side_effect=Exception("Login failure"))
+    def test_error_on_login(self, connect_mock, login_mock):
+        worker = FTPWorker(**self.params)
+        with worker as broker:
+            self.assertFalse(broker)
+            login_mock.assert_called_once_with("127.0.0.1", 2121, timeout=30)
+
+    @unittest.mock.patch("ftpclient.FTP.nlst", side_effect=Exception("List failure"))
+    def test_error_on_nlist(self, nlst_mock):
+        worker = FTPWorker(**self.params)
+        self.assertFalse(worker.filenames)
+        nlst_mock.assert_called_once_with()
+
+    @unittest.mock.patch("ftpclient.FTP.connect")
+    @unittest.mock.patch("ftpclient.FTP.login")
+    @unittest.mock.patch("ftpclient.FTP.cwd")
+    @unittest.mock.patch("ftpclient.FTP.delete", side_effect=Exception("Delete failure"))
+    def test_error_on_delete(self, connect_mock, login_mock, cwd_mock, delete_mock):
+        worker = FTPWorker(**self.params)
+        with worker as broker:
+            self.assertFalse(broker.delete("data.xls"))
+            delete_mock.assert_called_once_with("127.0.0.1", 2121, timeout=30)
+
+
 class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
     params = {
         "user": "testuser",
         "password": "password",
-        "host": "0.0.0.0",
+        "host": "127.0.0.1",
         "port": 2121,
         "working_directory": ".",
     }
@@ -53,6 +96,22 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         for (fd, path), content in self.files.items():
             os.write(fd, content)
             os.close(fd)
+
+    def test_server_check_negative(self):
+        worker = FTPWorker(**self.params)
+        self.assertFalse(worker.check())
+
+    def test_server_check_positive(self):
+        server = multiprocessing.Process(
+            target=serve,
+            args=(self.root,),
+            kwargs=self.params
+        )
+        server.start()
+        time.sleep(5)
+        worker = FTPWorker(**self.params)
+        self.assertTrue(worker.check())
+        server.terminate()
 
     @unittest.skipUnless(os.getenv("CF_INSTANCE_GUID"), "CF-only test")
     def test_cf_server_delete(self):
