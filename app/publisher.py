@@ -130,9 +130,9 @@ class DurableTopicPublisher:
             self._acked += 1
         elif confirmation_type == "nack":
             self._nacked += 1
-        self._deliveries.remove(method_frame.method.delivery_tag)
+        self._deliveries.append(method_frame.method.delivery_tag)
         self.log.info(
-            "Published %i messages, %i have yet to be confirmed, "
+            "Published %i messages, %i have been confirmed, "
             "%i were acked and %i were nacked",
             self._message_number, len(self._deliveries),
             self._acked, self._nacked
@@ -160,7 +160,6 @@ class DurableTopicPublisher:
             self.EXCHANGE, self.ROUTING_KEY, message, properties
         )
         self._message_number += 1
-        self._deliveries.append(self._message_number)
         self.log.info("Published message # %i", self._message_number)
         return self._message_number
 
