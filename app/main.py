@@ -72,8 +72,8 @@ class Task:
             uri = "amqp://{user}:{password}@{hostname}:{port}/{vhost}".format(
                 hostname=os.getenv("SEFT_RABBITMQ_HOST", "localhost"),
                 port=os.getenv("SEFT_RABBITMQ_PORT", 5672),
-                user=os.getenv("SEFT_RABBITMQ_DEFAULT_USER", "rabbit"),
-                password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "rabbit"),
+                user=os.getenv("SEFT_RABBITMQ_DEFAULT_USER", "guest"),
+                password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "guest"),
                 vhost=os.getenv("SEFT_RABBITMQ_DEFAULT_VHOST", "%2f")
             )
         return {
@@ -113,10 +113,10 @@ class Task:
     @staticmethod
     def ftp_params(services):
         return {
-            "user": os.getenv("SEFT_FTP_USER", "user"),
-            "password": os.getenv("SEFT_FTP_PASS", "password"),
+            "user": os.getenv("SEFT_FTP_USER", "ons"),
+            "password": os.getenv("SEFT_FTP_PASS", "ons"),
             "host": os.getenv("SEFT_FTP_HOST", "127.0.0.1"),
-            "port": int(os.getenv("SEFT_FTP_PORT", 2121)),
+            "port": int(os.getenv("SEFT_FTP_PORT", 2021)),
             "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/")
         }
 
@@ -165,10 +165,12 @@ class Task:
 
             now = datetime.datetime.utcnow()
             for fn, (ts, msg_id) in self.recent.copy().items():
-                if msg_id not in self.publisher._deliveries:
+                if msg_id in self.publisher._deliveries:
                     active.delete(fn)
                     log.info("Deleted {0}".format(fn))
-                if now - ts > datetime.timedelta(hours=1):
+
+                refresh_time = 2 * int(os.getenv("SEFT_FTP_INTERVAL_MS", 60 * 1000))
+                if now - ts > datetime.timedelta(milliseconds=refresh_time):
                     del self.recent[fn]
 
 
@@ -208,7 +210,7 @@ def main(args):
     app.listen(args.port)
 
     # Create the scheduled task
-    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 30 * 60 * 1000))
+    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 60 * 1000))
     transfer = tornado.ioloop.PeriodicCallback(
         task.transfer_files,
         transfer_ms,
