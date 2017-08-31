@@ -64,7 +64,6 @@ class Task:
 
     @staticmethod
     def amqp_params(services):
-        check = os.getenv("RABBIT_HEALTHCHECK_URL")
         queue = os.getenv("SEFT_PUBLISHER_RABBIT_QUEUE", "Seft.CollectionInstruments")
         try:
             uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
@@ -76,6 +75,13 @@ class Task:
                 password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "guest"),
                 vhost=os.getenv("SEFT_RABBITMQ_DEFAULT_VHOST", "%2f")
             )
+        check = "http://{user}:{password}@{hostname}:{port}/api/healthchecks/node".format(
+            user=os.getenv("SEFT_RABBITMQ_MONITORING_USER", "monitor"),
+            password=os.getenv("SEFT_RABBITMQ_MONITORING_PASS", "monitor"),
+            hostname=os.getenv("SEFT_RABBITMQ_HOST", "localhost"),
+            port=os.getenv("SEFT_RABBITMQ_HEALTHCHECK_PORT", 15672)
+        )
+
         return {
             "amqp_url": uri,
             "queue_name": queue,
