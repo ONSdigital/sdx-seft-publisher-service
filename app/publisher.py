@@ -149,8 +149,8 @@ class DurableTopicPublisher:
                                      self.publish_message)
 
     def publish_message(self, message, content_type=None, headers=None):
-        if self._stopping:
-            return
+        if self._channel is None or self._stopping:
+            return None
 
         properties = pika.BasicProperties(
             app_id="sdx.seft", content_type=content_type, headers=headers

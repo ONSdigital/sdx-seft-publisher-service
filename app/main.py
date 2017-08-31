@@ -166,8 +166,11 @@ class Task:
                     headers = {'tx_id': str(uuid.uuid4())}
 
                     msg_id = self.publisher.publish_message(payload, headers=headers)
-                    self.recent[job.filename] = (job.ts, msg_id)
-                    log.info("Published {0}".format(job.filename))
+                    if msg_id is None:
+                        log.warning("Failed to publish {0}".format(job.filename))
+                    else:
+                        self.recent[job.filename] = (job.ts, msg_id)
+                        log.info("Published {0}".format(job.filename))
 
             now = datetime.datetime.utcnow()
             for fn, (ts, msg_id) in self.recent.copy().items():
