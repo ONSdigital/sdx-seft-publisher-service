@@ -21,6 +21,8 @@ from encrypter import Encrypter
 from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
 
+DEFAULT_FTP_INTERVAL_MS = 10 * 60 * 1000
+
 
 class HealthCheckService(tornado.web.RequestHandler):
 
@@ -186,7 +188,7 @@ class Task:
                         active.delete(fn)
                         log.info("Deleted {0}".format(fn))
 
-                    refresh_time = 2 * int(os.getenv("SEFT_FTP_INTERVAL_MS", 60 * 1000))
+                    refresh_time = 2 * int(os.getenv("SEFT_FTP_INTERVAL_MS", DEFAULT_FTP_INTERVAL_MS))
                     if now - ts > datetime.timedelta(milliseconds=refresh_time):
                         del self.recent[fn]
         finally:
@@ -229,7 +231,7 @@ def main(args):
     app.listen(args.port)
 
     # Create the scheduled task
-    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 10 * 60 * 1000))
+    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", DEFAULT_FTP_INTERVAL_MS))
     transfer = tornado.ioloop.PeriodicCallback(
         task.transfer_files,
         transfer_ms,
