@@ -21,6 +21,8 @@ from encrypter import Encrypter
 from ftpclient import FTPWorker
 from publisher import DurableTopicPublisher
 
+DEFAULT_FTP_INTERVAL_MS = 10 * 60 * 1000
+
 
 class HealthCheckService(tornado.web.RequestHandler):
 
@@ -133,6 +135,7 @@ class Task:
         self.executor = ThreadPoolExecutor(max_workers=4)
         self.rabbit_check = None
         self.ftp_check = None
+        self.transfer = False
 
     def check_services(self, ftp_params=None, rabbit_url=""):
         ftp_params = ftp_params or self.ftp_params(self.services)
@@ -149,38 +152,47 @@ class Task:
             log.warning("Publisher is not ready.")
             return
 
-        log.info("Looking for files...")
-        worker = FTPWorker(**self.ftp_params(self.services))
-        encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
-        with worker as active:
-            if not active:
-                return
+        if self.transfer:
+            log.warning("Cancelling overlapped task.")
+            return
+        else:
+            self.transfer = True
 
-            for job in active.get(active.filenames):
-                if job.filename not in self.recent:
-                    data = job._asdict()
-                    data["file"] = base64.standard_b64encode(job.file).decode("ascii")
-                    data["ts"] = job.ts.isoformat()
-                    payload = encrypter.encrypt(data)
+        try:
+            log.info("Looking for files...")
+            worker = FTPWorker(**self.ftp_params(self.services))
+            encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
+            with worker as active:
+                if not active:
+                    return
 
-                    headers = {'tx_id': str(uuid.uuid4())}
+                for job in active.get(active.filenames):
+                    if job.filename not in self.recent:
+                        data = job._asdict()
+                        data["file"] = base64.standard_b64encode(job.file).decode("ascii")
+                        data["ts"] = job.ts.isoformat()
+                        payload = encrypter.encrypt(data)
 
-                    msg_id = self.publisher.publish_message(payload, headers=headers)
-                    if msg_id is None:
-                        log.warning("Failed to publish {0}".format(job.filename))
-                    else:
-                        self.recent[job.filename] = (job.ts, msg_id)
-                        log.info("Published {0}".format(job.filename))
+                        headers = {'tx_id': str(uuid.uuid4())}
 
-            now = datetime.datetime.utcnow()
-            for fn, (ts, msg_id) in self.recent.copy().items():
-                if msg_id in self.publisher._deliveries:
-                    active.delete(fn)
-                    log.info("Deleted {0}".format(fn))
+                        msg_id = self.publisher.publish_message(payload, headers=headers)
+                        if msg_id is None:
+                            log.warning("Failed to publish {0}".format(job.filename))
+                        else:
+                            self.recent[job.filename] = (job.ts, msg_id)
+                            log.info("Published {0}".format(job.filename))
 
-                refresh_time = 2 * int(os.getenv("SEFT_FTP_INTERVAL_MS", 60 * 1000))
-                if now - ts > datetime.timedelta(milliseconds=refresh_time):
-                    del self.recent[fn]
+                now = datetime.datetime.utcnow()
+                for fn, (ts, msg_id) in self.recent.copy().items():
+                    if msg_id in self.publisher._deliveries:
+                        active.delete(fn)
+                        log.info("Deleted {0}".format(fn))
+
+                    refresh_time = 2 * int(os.getenv("SEFT_FTP_INTERVAL_MS", DEFAULT_FTP_INTERVAL_MS))
+                    if now - ts > datetime.timedelta(milliseconds=refresh_time):
+                        del self.recent[fn]
+        finally:
+            self.transfer = False
 
 
 def make_app(task):
@@ -219,7 +231,7 @@ def main(args):
     app.listen(args.port)
 
     # Create the scheduled task
-    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", 60 * 1000))
+    transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", DEFAULT_FTP_INTERVAL_MS))
     transfer = tornado.ioloop.PeriodicCallback(
         task.transfer_files,
         transfer_ms,
