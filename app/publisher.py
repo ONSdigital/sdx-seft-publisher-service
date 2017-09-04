@@ -157,7 +157,8 @@ class DurableTopicPublisher:
         )
 
         self._channel.basic_publish(
-            self.EXCHANGE, self.ROUTING_KEY, message, properties
+            self.EXCHANGE, self.ROUTING_KEY, message, properties,
+            mandatory=True, immediate=False
         )
         self._message_number += 1
         self.log.info("Published message # %i", self._message_number)
