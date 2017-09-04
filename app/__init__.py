@@ -8,7 +8,7 @@ from structlog.processors import JSONRenderer
 from structlog.stdlib import filter_by_level, add_log_level
 
 
-__version__ = "0.1.1"
+__version__ = "1.0.0"
 __service__ = "sdx-seft-publisher-service"
 
 
