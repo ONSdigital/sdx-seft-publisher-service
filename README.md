@@ -37,6 +37,9 @@ _TBD_
 
 _TBC_
 
+## Run
+python -m app.main
+
 ## Test
 
 To run the tests in a Cloudfoundry environment:
