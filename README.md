@@ -6,9 +6,8 @@ Microservice for publishing SEFT files from internal to RAS
 
 ## What is this for?
 
-This service takes files produced by internal systems and publishes them out to the ONS RAS platform running in the cloud. The legacy internal systems do not currently have the ability to publish directly so this service provides a service layer shim to enable the files to be moved as required.
+This service takes files produced by internal systems and publishes them out to the ONS RAS platform running in the cloud. Th
 
-Once the internal systems are fully redeveloped this service will be either retired or retooled and integrated into the new platform.
 
 ## Getting started
 
@@ -39,15 +38,6 @@ _TBC_
 
 ## Run
 python -m app.main
-
-## Test
-
-To run the tests in a Cloudfoundry environment:
-
-```shell
-$ cf push seft-publisher-unittest
-$ cf logs seft-publisher-unittest --recent
-```
 
 ### License
 
