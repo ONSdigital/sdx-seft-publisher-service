@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.0.1
   - Remove JSON logging
 
 ### 1.0.0
