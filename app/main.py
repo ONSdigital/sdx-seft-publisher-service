@@ -103,13 +103,13 @@ class Task:
                 priv_key = key_file.read()
         except Exception as e:
             log.warning("Could not read key {0}".format(priv_fp))
-            log.warning(e)
+            log.warning(str(e))
         try:
             with open(pub_fp, "r") as key_file:
                 pub_key = key_file.read()
         except Exception as e:
             log.warning("Could not read key {0}".format(pub_fp))
-            log.warning(e)
+            log.warning(str(e))
 
         rv = {
             "public_key": pub_key,
