@@ -1,4 +1,5 @@
 ### Unreleased
+  - Downgrade structlog - to fix issue with tornado
 
 ### 1.0.1
   - Remove JSON logging
