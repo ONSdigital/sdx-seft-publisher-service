@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.0.2
   - Downgrade structlog - to fix issue with tornado
 
 ### 1.0.1
