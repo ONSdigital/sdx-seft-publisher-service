@@ -1,6 +1,5 @@
 from collections import namedtuple
 import logging
-import os
 
 import pika
 import pika.adapters
