@@ -10,7 +10,7 @@ Job = namedtuple("Job", ["ts", "filename", "file"])
 
 class DurableTopicPublisher:
 
-    EXCHANGE = os.getenv("SEFT_RABBIT_EXCHANGE", 'message')
+    EXCHANGE = 'message'
     PUBLISH_INTERVAL = 1
     ROUTING_KEY = "JWT"
 

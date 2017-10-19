@@ -33,7 +33,6 @@ _TBD_
 | SEFT_FTP_INTERVAL_MS          | 1800000   | Source polling interval (milliseconds)
 | SEFT_RABBITMQ_DEFAULT_PASS    | rabbit    |
 | SEFT_RABBITMQ_DEFAULT_USER    | rabbit    |
-| SEFT_RABBITMQ_DEFAULT_VHOST   | `/`       |
 
 _TBC_
 
