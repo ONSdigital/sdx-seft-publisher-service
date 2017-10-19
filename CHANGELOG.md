@@ -1,4 +1,5 @@
 ### Unreleased
+  - Removed unchanging configurable variables.
 
 ### 1.0.2
   - Downgrade structlog - to fix issue with tornado
