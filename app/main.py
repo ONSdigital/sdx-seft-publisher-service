@@ -66,7 +66,7 @@ class Task:
 
     @staticmethod
     def amqp_params(services):
-        queue = os.getenv("SEFT_PUBLISHER_RABBIT_QUEUE", "Seft.CollectionInstruments")
+        queue = "Seft.CollectionInstruments"
         try:
             uri = services["rabbitmq"][0]["credentials"]["protocols"]["amqp"]["uri"]
         except (IndexError, KeyError):
@@ -75,7 +75,7 @@ class Task:
                 port=os.getenv("SEFT_RABBITMQ_PORT", 5672),
                 user=os.getenv("SEFT_RABBITMQ_DEFAULT_USER", "guest"),
                 password=os.getenv("SEFT_RABBITMQ_DEFAULT_PASS", "guest"),
-                vhost=os.getenv("SEFT_RABBITMQ_DEFAULT_VHOST", "%2f")
+                vhost="%2f"
             )
         check = "http://{user}:{password}@{hostname}:{port}/api/healthchecks/node".format(
             user=os.getenv("SEFT_RABBITMQ_MONITORING_USER", "monitor"),
