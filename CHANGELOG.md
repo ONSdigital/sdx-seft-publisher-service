@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.1.0 2017-11-01
   - Removed unchanging configurable variables.
 
 ### 1.0.2

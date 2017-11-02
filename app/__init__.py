@@ -5,7 +5,7 @@ from sdx.common.logger_config import logger_initial_config
 from structlog import wrap_logger
 
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 __service__ = "sdx-seft-publisher-service"
 
 
