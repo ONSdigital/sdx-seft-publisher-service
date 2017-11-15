@@ -10,10 +10,10 @@ applications:
   command: app/main.py --test
   health-check-type: http
   health-check-http-endpoint: /recent
-- name: seft-publisher
+- name: sdx-seft-publisher-service
   buildpack: python_buildpack
   command: app/main.py
   health-check-type: http
   health-check-http-endpoint: /recent
 services:
-- sdx-rabbitmq
+  - sdx-rabbit-dev

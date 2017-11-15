@@ -1,5 +1,6 @@
 ### Unreleased
   - Remove sdx-common logging
+  - Changes to menifest to allow deployment to Dev Cloud Foundry
 
 ### 1.1.0 2017-11-01
   - Removed unchanging configurable variables.
