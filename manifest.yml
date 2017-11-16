@@ -1,4 +1,3 @@
----
 applications:
 - name: sdx-seft-publisher-service
   buildpack: python_buildpack

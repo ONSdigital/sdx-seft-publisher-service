@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-#   encoding: UTF-8
 
 import argparse
 import base64
@@ -14,7 +13,7 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 
-from . import create_and_wrap_logger
+from app import create_and_wrap_logger
 from app.encrypter import Encrypter
 from app.ftpclient import FTPWorker
 from app.publisher import DurableTopicPublisher
