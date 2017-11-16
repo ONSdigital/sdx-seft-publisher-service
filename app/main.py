@@ -14,7 +14,7 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 
-from app import create_and_wrap_logger
+from . import create_and_wrap_logger
 from app.encrypter import Encrypter
 from app.ftpclient import FTPWorker
 from app.publisher import DurableTopicPublisher

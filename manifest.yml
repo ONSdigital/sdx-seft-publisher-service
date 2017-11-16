@@ -1,18 +1,7 @@
 ---
 applications:
-- name: seft-publisher-unittest
-  buildpack: python_buildpack
-  command: app/test/test_ftp.py
-  no-route: true
-  health-check-type: process
-- name: seft-publisher-functest
-  buildpack: python_buildpack
-  command: app/main.py --test
-  health-check-type: http
-  health-check-http-endpoint: /recent
 - name: sdx-seft-publisher-service
   buildpack: python_buildpack
-  command: app/main.py
   health-check-type: http
   health-check-http-endpoint: /recent
 services:
