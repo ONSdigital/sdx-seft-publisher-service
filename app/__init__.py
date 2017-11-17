@@ -7,7 +7,7 @@ from structlog import wrap_logger
 __version__ = "1.1.0"
 __service__ = "sdx-seft-publisher-service"
 
-LOGGING_FORMAT = "%(asctime)s.%(msecs)06dZ|%(levelname)s: sdx-seft-consumer-service: %(message)s"
+LOGGING_FORMAT = "%(asctime)s.%(msecs)06dZ|%(levelname)s: sdx-seft-publisher-service: %(message)s"
 
 logging.basicConfig(format=LOGGING_FORMAT,
                     datefmt="%Y-%m-%dT%H:%M:%S",
