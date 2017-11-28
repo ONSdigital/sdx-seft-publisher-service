@@ -3,5 +3,11 @@ applications:
   buildpack: python_buildpack
   health-check-type: http
   health-check-http-endpoint: /recent
+
+env:
+  SEFT_FTP_USER: ons
+  SEFT_FTP_PASS: ons
+  SEFT_FTP_HOST: 21
+  SEFT_PUBLISHER_FTP_FOLDER: template_RAS
 services:
   - sdx-rabbit-dev
