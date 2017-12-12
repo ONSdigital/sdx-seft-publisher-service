@@ -1,0 +1,17 @@
+applications:
+- name: sdx-seft-publisher-service-SPACE
+  buildpack: python_buildpack
+  health-check-type: http
+  health-check-http-endpoint: /recent
+  instances: INSTANCES
+  host: sdx-seft-publisher-sevice-SPACE
+  timeout: 180
+  memory: 512M
+
+env:
+  SEFT_FTP_USER: FTPUSER
+  SEFT_FTP_PASS: FTPPASS
+  SEFT_FTP_HOST: FTPHOST
+  SEFT_PUBLISHER_FTP_FOLDER: FTPFOLDER
+services:
+  - sdx-rabbit-SPACE
