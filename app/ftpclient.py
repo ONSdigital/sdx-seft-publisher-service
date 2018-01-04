@@ -26,14 +26,14 @@ class FTPWorker:
         try:
             self.ftp.connect(self.host, self.port, timeout=self.timeout)
         except Exception as e:
-            self.log.warning(str(e))
+            self.log.error("Failed to connect to FTP server", error=str(e))
             return None
 
         try:
             self.ftp.login(user=self.user, passwd=self.password)
             self.ftp.cwd(self.working_directory)
         except Exception as e:
-            self.log.warning(str(e))
+            self.log.error("Failed to login/cwd to FTP server", error=str(e))
             return None
 
         return self
@@ -43,7 +43,7 @@ class FTPWorker:
         try:
             return self.ftp.nlst()
         except Exception as e:
-            self.log.warning(str(e))
+            self.log.error("Error getting filenames", error=str(e))
             return []
 
     def check(self):
@@ -53,7 +53,7 @@ class FTPWorker:
             except AttributeError:
                 return False
             except Exception as e:
-                self.log.warning(str(e))
+                self.log.error("Failed NOOP command", error=str(e))
                 return False
             else:
                 return True
@@ -65,7 +65,7 @@ class FTPWorker:
             try:
                 self.ftp.retrbinary("RETR {0}".format(fp), callback=buf.write)
             except Exception as e:
-                self.log.warning(str(e))
+                self.log.error("Failed to get file", error=str(e))
             else:
                 yield Job(datetime.datetime.utcnow(), fp, buf.getvalue())
                 filenames.remove(fp)
@@ -75,12 +75,12 @@ class FTPWorker:
             self.ftp.delete(filename)
             return True
         except Exception as e:
-            self.log.warning(str(e))
+            self.log.error("Failed to delete file", error=str(e))
             return False
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             self.ftp.quit()
         except Exception as e:
-            self.log.warning(str(e))
+            self.log.error("Error during connection closure", error=str(e))
         return False
