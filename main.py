@@ -122,8 +122,8 @@ class Task:
             "user": os.getenv("SEFT_FTP_USER", "ons"),
             "password": os.getenv("SEFT_FTP_PASS", "ons"),
             "host": os.getenv("SEFT_FTP_HOST", "127.0.0.1"),
-            "port": int(os.getenv("SEFT_FTP_PORT", 2021)),
-            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/")
+            "port": int(os.getenv("SEFT_FTP_PORT", 21)),
+            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/Ftp")
         }
 
     def __init__(self, args, services):
@@ -204,10 +204,10 @@ def parser(description="SEFT Publisher service."):
     here = os.path.dirname(__file__)
     p = argparse.ArgumentParser(description)
     p.add_argument(
-        "--keys", default=os.path.abspath(os.path.join(here, "test")),
+        "--keys", default=os.path.abspath(os.path.join(here, "app/test")),
         help="Set a path to the keypair directory.")
     p.add_argument(
-        "--port", type=int, default=int(os.getenv("SDX_SEFT_PUBLISHER_PORT", "8080")),
+        "--port", type=int, default=int(os.getenv("SDX_SEFT_PUBLISHER_PORT", "8087")),
         help="Set a port for the service.")
     return p
 
