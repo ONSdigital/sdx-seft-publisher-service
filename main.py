@@ -91,6 +91,7 @@ class Task:
 
     @staticmethod
     def encrypt_params(services, locn="."):
+        log.info("Encrypt params")
         pub_fp = os.getenv("RAS_SEFT_PUBLISHER_PUBLIC_KEY",
                            os.path.join(locn, "test_no_password.pub"))
         priv_fp = os.getenv("SDX_SEFT_PUBLISHER_PRIVATE_KEY",
@@ -114,6 +115,7 @@ class Task:
             "public_key": pub_key,
             "private_key": priv_key,
         }
+        log.info("End of encrypt_params")
         return rv
 
     @staticmethod
@@ -122,8 +124,8 @@ class Task:
             "user": os.getenv("SEFT_FTP_USER", "ons"),
             "password": os.getenv("SEFT_FTP_PASS", "ons"),
             "host": os.getenv("SEFT_FTP_HOST", "127.0.0.1"),
-            "port": int(os.getenv("SEFT_FTP_PORT", 21)),
-            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/Ftp")
+            "port": int(os.getenv("SEFT_FTP_PORT", 2021)),
+            "working_directory": os.getenv("SEFT_PUBLISHER_FTP_FOLDER", "/")
         }
 
     def __init__(self, args, services):
@@ -159,9 +161,13 @@ class Task:
         try:
             log.info("Looking for files...")
             worker = FTPWorker(**self.ftp_params(self.services))
+            log.info("So its signed in successfully")
+            log.info(self.services)
+            log.info(self.ar)
             encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
             with worker as active:
                 if not active:
+                    log.info("Worker not active")
                     return
 
                 for job in active.get(active.filenames):
