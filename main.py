@@ -204,7 +204,7 @@ def parser(description="SEFT Publisher service."):
     here = os.path.dirname(__file__)
     p = argparse.ArgumentParser(description)
     p.add_argument(
-        "--keys", default=os.path.abspath(os.path.join(here, "app/test")),
+        "--keys", default=os.path.abspath(os.path.join(here, "test")),
         help="Set a path to the keypair directory.")
     p.add_argument(
         "--port", type=int, default=int(os.getenv("SDX_SEFT_PUBLISHER_PORT", "8087")),
