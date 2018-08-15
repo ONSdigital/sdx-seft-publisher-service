@@ -12,7 +12,40 @@ Once the internal systems are fully redeveloped this service will be either reti
 
 ## Getting started
 
-_TBD_
+To install, use:
+```
+make build
+```
+To run the tests, use:
+```
+make test
+```
+## Usage
+### Using Docker compose
+
+You can run this service using the docker compose file in [sdc-ci-upload-compose](https://github.com/ONSdigital/sdc-ci-upload-compose/tree/update-env-vars-for-rabbit-adapter) and running `docker compose up -d`. This will run all the necessary services that
+it needs to communicate with. All you will need to do then is put a xlxs file inside the `Documents/ftp` directory and file should be put on the FTP.
+
+### Running Standalone
+
+You can run this service on its own but to do so, some changes will have to be made to environment variables such as `SEFT_FTP_PORT` and `SEFT_PUBLISHER_FTP_FOLDER`. This service also needs
+to communicate with an FTP server and a Rabbit queue, so these services will need to be created in order to upload files correctly. Down below is an example of the variables that need to be changed to connect to the
+FTP.
+
+| Environment variable          | FTP Changes   | Description
+| --------------------          | -------   | -----------
+| SEFT_FTP_PORT                 | 21 |        Local FTP port
+| SEFT_PUBLISHER_FTP_FOLDER     | Documents/ftp | Example FTP folder
+| SEFT_FTP_USER     | user | Example username for FTP
+| SEFT_FTP_PASS     | pass | Example password for FTP
+
+
+
+To start the service, use the command:
+```
+python main.py
+```
+
 
 ## Configuration
 
@@ -36,8 +69,6 @@ _TBD_
 
 _TBC_
 
-## Run
-python -m app.main
 
 ## Test
 

@@ -1,0 +1,20 @@
+.*
+.git
+.dockerignore
+Dockerfile
+
+
+# Python temp files
+*.pyc
+*/__pycache__*
+
+.idea
+
+# Virtualenvs
+env
+env*
+venv
+
+*.tox
+*.ini
+*.md
