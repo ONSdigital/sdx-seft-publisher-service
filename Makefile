@@ -8,3 +8,5 @@ test: build
 	flake8 --exclude lib .
 	python3 -m unittest app/test/test_*.py
 
+start:
+	python main.py

@@ -28,14 +28,13 @@ it needs to communicate with. All you will need to do then is put a xlxs file in
 
 ### Running Standalone
 
-You can run this service on its own but to do so, some changes will have to be made to environment variables such as `SEFT_FTP_PORT` and `SEFT_PUBLISHER_FTP_FOLDER`. This service also needs
-to communicate with an FTP server and a Rabbit queue, so these services will need to be created in order to upload files correctly. If you want to do so, your best option is to go to
+You can run this service on its own but to do so, a FTP server and a Rabbit queue need to be created to communicate with it. If you want to run it on its own, your best option is to go to
 [sdc-ci-upload-compose](https://github.com/ONSdigital/sdc-ci-upload-compose) and run `docker-compose up -d sdx-seft-publisher-service`. This will build all the services that sdx-seft-publisher
-needs to run and pull a file from an FTP and put it on a Rabbit queue.
+needs to run, pull a file from an FTP and put it on a Rabbit queue.
 
 To start the service, use the command:
 ```
-python main.py
+make start
 ```
 
 
