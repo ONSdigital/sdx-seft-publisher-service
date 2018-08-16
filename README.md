@@ -12,7 +12,31 @@ Once the internal systems are fully redeveloped this service will be either reti
 
 ## Getting started
 
-_TBD_
+To install, use:
+```
+make build
+```
+To run the tests, use:
+```
+make test
+```
+## Usage
+### Using Docker compose
+
+You can run this service using the docker compose file in [sdc-ci-upload-compose](https://github.com/ONSdigital/sdc-ci-upload-compose) and running `docker compose up -d`. This will run all the necessary services that
+it needs to communicate with. All you will need to do then is put a xlxs file inside the `Documents/ftp` directory and file should be put on the FTP.
+
+### Running Standalone
+
+You can run this service on its own but to do so, a FTP server and a Rabbit queue need to be created to communicate with it. If you want to run it on its own, your best option is to go to
+[sdc-ci-upload-compose](https://github.com/ONSdigital/sdc-ci-upload-compose) and run `docker-compose up -d sdx-seft-publisher-service`. This will build all the services that sdx-seft-publisher
+needs to run, pull a file from an FTP and put it on a Rabbit queue.
+
+To start the service, use the command:
+```
+make start
+```
+
 
 ## Configuration
 
@@ -36,8 +60,6 @@ _TBD_
 
 _TBC_
 
-## Run
-python -m app.main
 
 ## Test
 
