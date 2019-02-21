@@ -32,6 +32,12 @@ You can run this service on its own but to do so, a FTP server and a Rabbit queu
 [sdc-ci-upload-compose](https://github.com/ONSdigital/sdc-ci-upload-compose) and run `docker-compose up -d sdx-seft-publisher-service`. This will build all the services that sdx-seft-publisher
 needs to run, pull a file from an FTP and put it on a Rabbit queue.
 
+Alternatively you can create the FTP server and the Rabbit queue with the following commands:
+```
+docker run -d -p 5672:5672 rabbitmq:3-management:latest
+docker run -d -p 2021:2021 onsdigital/pure-ftpd:latest
+```
+
 To start the service, use the command:
 ```
 make start

@@ -6,10 +6,10 @@ import unittest
 import tornado.concurrent
 import tornado.ioloop
 
+from app.main import Task
 from app.test.localserver import serve
 from app.test.test_ftp import NeedsTemporaryDirectory
 from app.test.test_ftp import ServerTests
-from main import Task
 
 
 class TaskTests(NeedsTemporaryDirectory, unittest.TestCase):

@@ -1,7 +1,13 @@
 FROM python:3.6
-WORKDIR /app
+
 EXPOSE 8086
-CMD  ["python3","main.py"]
-COPY requirements.txt /app/requirements.txt
-RUN pip3 install --require-hashes -r requirements.txt
-COPY . /app
+RUN mkdir -p /app/logs
+
+COPY app /app
+COPY requirements.txt /requirements.txt
+COPY startup.sh /startup.sh
+COPY Makefile /Makefile
+
+RUN make build
+
+ENTRYPOINT ./startup.sh
