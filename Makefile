@@ -9,4 +9,4 @@ test: build
 	python3 -m unittest app/test/test_*.py
 
 start:
-	python main.py
+	python3 -m app.main
