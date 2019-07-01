@@ -9,7 +9,6 @@ from structlog import wrap_logger
 from app.publisher import Job
 
 
-
 class FTPWorker:
 
     @staticmethod
