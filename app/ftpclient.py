@@ -1,10 +1,13 @@
 import datetime
 from ftplib import FTP
 from io import BytesIO
+import logging
 from os import path
 
-from app import create_and_wrap_logger
+from structlog import wrap_logger
+
 from app.publisher import Job
+
 
 
 class FTPWorker:
@@ -15,7 +18,7 @@ class FTPWorker:
         return path.basename(path.normpath(p))
 
     def __init__(self, user, password, host, port, working_directory, timeout=30):
-        self.log = create_and_wrap_logger(__name__)
+        self.log = wrap_logger(logging.getLogger(__name__))
         self.user, self.password = user, password
         self.host, self.port = host, port
         self.timeout = timeout
