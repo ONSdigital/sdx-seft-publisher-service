@@ -18,7 +18,7 @@ from app.encrypter import Encrypter
 from app.ftpclient import FTPWorker
 from app.publisher import DurableTopicPublisher
 
-DEFAULT_FTP_INTERVAL_MS = 10 * 60 * 1000
+DEFAULT_FTP_INTERVAL_MS = 10 * 60 * 1000  # 10 minutes
 
 log = create_and_wrap_logger(__name__)
 
@@ -191,6 +191,7 @@ class Task:
                         del self.recent[fn]
         finally:
             self.transfer = False
+            log.info("Finished looking for files.")
 
 
 def make_app(task):
