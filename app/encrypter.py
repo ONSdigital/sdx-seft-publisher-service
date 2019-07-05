@@ -10,7 +10,7 @@ import jwt
 # TODO again this could be moved to the common library
 
 
-class Encrypter (object):
+class Encrypter(object):
     def __init__(self, public_key, private_key):
         private_key_bytes = self._to_bytes(private_key)
 
