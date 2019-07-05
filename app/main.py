@@ -145,7 +145,6 @@ class Task:
         self.ftp_check = self.executor.submit(ftp.check)
 
     def transfer_files(self):
-
         if not self.publisher.publishing:
             log.warning("Publisher is not ready.")
             return
