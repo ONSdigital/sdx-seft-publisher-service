@@ -1,5 +1,9 @@
 ### Unreleased
 
+### 1.2.2 2019-07-17
+  - Updated urllib 3 to version 1.24.2
+  - Improve start up logging
+  
 ### 1.2.1 2019-02-28
   - Improve logging messages in ftpclient
 
