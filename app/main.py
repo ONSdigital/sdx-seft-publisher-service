@@ -2,7 +2,6 @@
 
 import argparse
 import base64
-import datetime
 import json
 import os.path
 import sys
@@ -20,7 +19,7 @@ from app.publisher import DurableTopicPublisher
 
 DEFAULT_FTP_INTERVAL_MS = 10 * 60 * 1000  # 10 minutes
 
-log = create_and_wrap_logger(__name__)
+logger = create_and_wrap_logger(__name__)
 
 
 class HealthCheckService(tornado.web.RequestHandler):
@@ -40,7 +39,7 @@ class HealthCheckService(tornado.web.RequestHandler):
             else:
                 rabbit_health = True
 
-        ftp_health = self.task.ftp_check.done() and self.ftp_check.result()
+        ftp_health = self.task.ftp_check.done() and self.task.ftp_check.result()
 
         self.write({
             "status": rabbit_health and ftp_health,
@@ -101,14 +100,14 @@ class Task:
             with open(priv_fp, "r") as key_file:
                 priv_key = key_file.read()
         except Exception as e:
-            log.warning("Could not read key {0}".format(priv_fp))
-            log.warning(str(e))
+            logger.warning("Could not read key {0}".format(priv_fp))
+            logger.warning(str(e))
         try:
             with open(pub_fp, "r") as key_file:
                 pub_key = key_file.read()
         except Exception as e:
-            log.warning("Could not read key {0}".format(pub_fp))
-            log.warning(str(e))
+            logger.warning("Could not read key {0}".format(pub_fp))
+            logger.warning(str(e))
 
         rv = {
             "public_key": pub_key,
@@ -146,17 +145,17 @@ class Task:
 
     def transfer_files(self):
         if not self.publisher.publishing:
-            log.warning("Publisher is not ready.")
+            logger.warning("Publisher is not ready.")
             return
 
         if self.transfer:
-            log.warning("Cancelling overlapped task.")
+            logger.warning("Cancelling overlapped task.")
             return
         else:
             self.transfer = True
 
         try:
-            log.info("Looking for files...")
+            logger.info("Looking for files...")
             worker = FTPWorker(**self.ftp_params(self.services))
             encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
             with worker as active:
@@ -165,6 +164,7 @@ class Task:
 
                 for job in active.get(active.filenames):
                     if job.filename not in self.recent:
+                        logger.info("Found a file to publish", filename=job.filename)
                         data = job._asdict()
                         data["file"] = base64.standard_b64encode(job.file).decode("ascii")
                         data["ts"] = job.ts.isoformat()
@@ -174,23 +174,29 @@ class Task:
 
                         msg_id = self.publisher.publish_message(payload, headers=headers)
                         if msg_id is None:
-                            log.warning("Failed to publish {0}".format(job.filename))
+                            logger.warning("Failed to publish file", filename=job.filename)
                         else:
-                            self.recent[job.filename] = (job.ts, msg_id)
-                            log.info("Published {0}".format(job.filename))
+                            self.recent[job.filename] = msg_id
+                            logger.info("Published file", filename=job.filename)
 
-                now = datetime.datetime.utcnow()
-                for fn, (ts, msg_id) in self.recent.copy().items():
-                    if msg_id in self.publisher._deliveries:
-                        active.delete(fn)
-                        log.info("Deleted {0}".format(fn))
-
-                    refresh_time = 2 * int(os.getenv("SEFT_FTP_INTERVAL_MS", DEFAULT_FTP_INTERVAL_MS))
-                    if now - ts > datetime.timedelta(milliseconds=refresh_time):
-                        del self.recent[fn]
+                logger.info("Finished publishing files, checking if any files need to be deleted")
+                for filename, msg_id in self.recent.items():
+                    logger.info("Recently published file found", filename=filename, msg_id=msg_id)
+                    # The file might not be in confirmed_deliveries as the publisher waits for the delivery
+                    # confirmation adding it to the list
+                    if msg_id in self.publisher.confirmed_deliveries:
+                        logger.info("Deleting file as it has its delivery confirmed",
+                                    filename=filename, msg_id=msg_id)
+                        file_deleted = active.delete(filename)
+                        if file_deleted:
+                            del self.recent[filename]
+                            logger.info("Succssfully deleted file", filename=filename, msg_id=msg_id)
+                    else:
+                        logger.info("Not deleting file as it hasn't had its delivery confirmed",
+                                    filename=filename, msg_id=msg_id)
         finally:
             self.transfer = False
-            log.info("Finished looking for files.")
+            logger.info("Finished looking for files.")
 
 
 def make_app(task):
@@ -213,7 +219,7 @@ def parser(description="SEFT Publisher service."):
 
 
 def main(args):
-    log.info("Launched in {0}.".format(os.getcwd()))
+    logger.info("Application launched", cwd=os.getcwd())
 
     services = json.loads(os.getenv("VCAP_SERVICES", "{}"))
     task = Task(args, services)
@@ -224,21 +230,17 @@ def main(args):
 
     # Create the scheduled task
     transfer_ms = int(os.getenv("SEFT_FTP_INTERVAL_MS", DEFAULT_FTP_INTERVAL_MS))
-    transfer = tornado.ioloop.PeriodicCallback(
-        task.transfer_files,
-        transfer_ms,
-    )
-
+    transfer = tornado.ioloop.PeriodicCallback(task.transfer_files, transfer_ms)
     transfer.start()
-    log.info("Transfer scheduled.")
+    logger.info("Transfer scheduled.")
 
-    check_ms = 5 * 60 * 1000
+    check_ms = 5 * 60 * 1000 # 5 minutes
     check = tornado.ioloop.PeriodicCallback(
         task.check_services,
         check_ms,
     )
     check.start()
-    log.info("Check scheduled.")
+    logger.info("Check scheduled.")
 
     # Perform the first transfer immediately
     loop = tornado.ioloop.IOLoop.current()

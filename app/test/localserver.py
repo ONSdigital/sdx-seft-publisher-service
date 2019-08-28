@@ -60,8 +60,8 @@ def serve(root, user, password, host, port, working_directory):
 
 
 def main(args):
-    log = logging.getLogger("localftp")
-    log.setLevel(args.log_level)
+    logger = logging.getLogger("localftp")
+    logger.setLevel(args.log_level)
 
     formatter = logging.Formatter(
         "%(asctime)s %(levelname)-7s %(name)s|%(message)s")
@@ -73,14 +73,14 @@ def main(args):
         fh = WatchedFileHandler(args.log_path)
         fh.setLevel(args.log_level)
         fh.setFormatter(formatter)
-        log.addHandler(fh)
+        logger.addHandler(fh)
         ch.setLevel(logging.WARNING)
 
     ch.setFormatter(formatter)
-    log.addHandler(ch)
+    logger.addHandler(ch)
     log = logging.getLogger("pyftpdlib")
-    log.setLevel(args.log_level)
-    log.addHandler(ch)
+    logger.setLevel(args.log_level)
+    logger.addHandler(ch)
 
     work_dir = args.work if args.work and os.path.isdir(args.work) else tempfile.mkdtemp()
     return serve(work_dir, "testuser", "password", "127.0.0.1", args.port)
