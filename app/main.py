@@ -109,10 +109,14 @@ class Task:
         self.rabbit_check = None
         self.ftp_check = None
         self.transfer = False
+        self.key_purpose = 'outbound'
 
         keys_file_location = os.getenv('SDX_KEYS_FILE', './jwt-test-keys/keys.yml')
         with open(keys_file_location) as file:
             self.secrets_from_file = yaml.safe_load(file)
+
+        validate_required_keys(self.secrets_from_file, self.key_purpose)
+        self.key_store = KeyStore(self.secrets_from_file)
 
     def check_services(self, ftp_params=None, rabbit_url=""):
         ftp_params = ftp_params or self.ftp_params(self.services)
@@ -147,19 +151,15 @@ class Task:
                         data = job._asdict()
                         data["file"] = base64.standard_b64encode(job.file).decode("ascii")
                         data["ts"] = job.ts.isoformat()
-                        key_purpose = 'outbound'
-                        validate_required_keys(self.secrets_from_file, key_purpose)
-                        key_store = KeyStore(self.secrets_from_file)
-                        payload = encrypt(data, key_store, key_purpose)
+                        payload = encrypt(data, self.key_store, self.key_purpose)
+                        tx_id = str(uuid.uuid4())
 
-                        headers = {'tx_id': str(uuid.uuid4())}
-
-                        msg_id = self.publisher.publish_message(payload, headers=headers)
+                        msg_id = self.publisher.publish_message(payload, headers={'tx_id': tx_id})
                         if msg_id is None:
                             logger.warning("Failed to publish file", filename=job.filename)
                         else:
                             self.recent[job.filename] = msg_id
-                            logger.info("Published file", filename=job.filename)
+                            logger.info("Published file", filename=job.filename, tx_id=tx_id)
 
                 logger.info("Finished publishing files, checking if any files need to be deleted")
                 for filename, msg_id in self.recent.items():
