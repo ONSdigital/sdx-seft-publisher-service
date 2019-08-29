@@ -57,7 +57,6 @@ class DurableTopicPublisher:
             self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):
-        self.confirmed_deliveries = []
         self._acked = 0
         self._nacked = 0
         self._message_number = 0
