@@ -234,7 +234,7 @@ def main(args):
     transfer.start()
     logger.info("Transfer scheduled.")
 
-    check_ms = 5 * 60 * 1000 # 5 minutes
+    check_ms = 5 * 60 * 1000  # 5 minutes
     check = tornado.ioloop.PeriodicCallback(
         task.check_services,
         check_ms,

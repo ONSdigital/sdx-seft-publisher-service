@@ -78,7 +78,6 @@ def main(args):
 
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    log = logging.getLogger("pyftpdlib")
     logger.setLevel(args.log_level)
     logger.addHandler(ch)
 

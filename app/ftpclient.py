@@ -8,6 +8,7 @@ from structlog import wrap_logger
 
 from app.publisher import Job
 
+
 # pylint: disable=broad-except
 class FTPWorker:
 
