@@ -111,7 +111,7 @@ class Task:
         self.transfer = False
         self.key_purpose = 'outbound'
 
-        keys_file_location = os.getenv('SDX_KEYS_FILE', './jwt-test-keys/keys.yml')
+        keys_file_location = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', './jwt-test-keys/keys.yml')
         with open(keys_file_location) as file:
             self.secrets_from_file = yaml.safe_load(file)
 
