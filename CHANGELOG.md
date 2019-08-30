@@ -3,7 +3,7 @@
   - Reworked deletion logic so the file is deleted once the delivery confirmation has occured
   - Use sdc-cryptography for encryption instead of custom solution that was there previously
   - Update a number of packages to remove deprecation warning that happened on encryption
-  - Drop support for python 3.4 and add testing for python 3.7 in travis
+  - Drop support for python 3.4
 
 ### 1.2.2 2019-07-17
   - Updated urllib 3 to version 1.24.2
