@@ -8,12 +8,15 @@ import sys
 import tornado.ioloop
 import tornado.web
 import uuid
+import yaml
+
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from tornado.httpclient import AsyncHTTPClient, HTTPError
+from sdc.crypto.encrypter import encrypt
+from sdc.crypto.key_store import KeyStore, validate_required_keys
 
 from app import create_and_wrap_logger
-from app.encrypter import Encrypter
 from app.ftpclient import FTPWorker
 from app.publisher import DurableTopicPublisher
 
@@ -89,33 +92,6 @@ class Task:
         }
 
     @staticmethod
-    def encrypt_params(services, locn="."):
-        pub_fp = os.getenv("RAS_SEFT_PUBLISHER_PUBLIC_KEY",
-                           os.path.join(locn, "test_no_password.pub"))
-        priv_fp = os.getenv("SDX_SEFT_PUBLISHER_PRIVATE_KEY",
-                            os.path.join(locn, "test_no_password.pem"))
-        priv_key = None
-        pub_key = None
-        try:
-            with open(priv_fp, "r") as key_file:
-                priv_key = key_file.read()
-        except Exception as e:
-            logger.warning("Could not read key {0}".format(priv_fp))
-            logger.warning(str(e))
-        try:
-            with open(pub_fp, "r") as key_file:
-                pub_key = key_file.read()
-        except Exception as e:
-            logger.warning("Could not read key {0}".format(pub_fp))
-            logger.warning(str(e))
-
-        rv = {
-            "public_key": pub_key,
-            "private_key": priv_key,
-        }
-        return rv
-
-    @staticmethod
     def ftp_params(services):
         return {
             "user": os.getenv("SEFT_FTP_USER", "ons"),
@@ -133,6 +109,14 @@ class Task:
         self.rabbit_check = None
         self.ftp_check = None
         self.transfer = False
+        self.key_purpose = 'outbound'
+
+        keys_file_location = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', './jwt-test-keys/keys.yml')
+        with open(keys_file_location) as file:
+            self.secrets_from_file = yaml.safe_load(file)
+
+        validate_required_keys(self.secrets_from_file, self.key_purpose)
+        self.key_store = KeyStore(self.secrets_from_file)
 
     def check_services(self, ftp_params=None, rabbit_url=""):
         ftp_params = ftp_params or self.ftp_params(self.services)
@@ -157,7 +141,6 @@ class Task:
         try:
             logger.info("Looking for files...")
             worker = FTPWorker(**self.ftp_params(self.services))
-            encrypter = Encrypter(**self.encrypt_params(self.services, locn=self.args.keys))
             with worker as active:
                 if not active:
                     return
@@ -168,16 +151,15 @@ class Task:
                         data = job._asdict()
                         data["file"] = base64.standard_b64encode(job.file).decode("ascii")
                         data["ts"] = job.ts.isoformat()
-                        payload = encrypter.encrypt(data)
+                        payload = encrypt(data, self.key_store, self.key_purpose)
+                        tx_id = str(uuid.uuid4())
 
-                        headers = {'tx_id': str(uuid.uuid4())}
-
-                        msg_id = self.publisher.publish_message(payload, headers=headers)
+                        msg_id = self.publisher.publish_message(payload, headers={'tx_id': tx_id})
                         if msg_id is None:
                             logger.warning("Failed to publish file", filename=job.filename)
                         else:
                             self.recent[job.filename] = msg_id
-                            logger.info("Published file", filename=job.filename)
+                            logger.info("Published file", filename=job.filename, tx_id=tx_id)
 
                 logger.info("Finished publishing files, checking if any files need to be deleted")
                 for filename, msg_id in self.recent.items():
