@@ -4,7 +4,7 @@
 
 Microservice for publishing SEFT files from internal to RAS
 
-## What is this for?
+## Purpose of this service
 
 This service takes files produced by internal systems and publishes them out to the ONS RAS platform running in the cloud. The legacy internal systems do not currently have the ability to publish directly so this service provides a service layer shim to enable the files to be moved as required.
 
@@ -13,18 +13,23 @@ Once the internal systems are fully redeveloped this service will be either reti
 ## Getting started
 
 To install, use:
-```
+
+```bash
 make build
 ```
+
 To run the tests, use:
-```
+
+```bash
 make test
 ```
+
 ## Usage
+
 ### Using Docker compose
 
 You can run this service using the docker compose file in [sdc-ci-upload-compose](https://github.com/ONSdigital/sdc-ci-upload-compose) and running `docker compose up -d`. This will run all the necessary services that
-it needs to communicate with. All you will need to do then is put a xlxs file inside the `Documents/ftp` directory and file should be put on the FTP.
+it needs to communicate with. All you will need to do then is put a .xlxs file inside the `Documents/ftp` directory and file should be put on the FTP.
 
 ### Running Standalone
 
@@ -33,51 +38,83 @@ You can run this service on its own but to do so, a FTP server and a Rabbit queu
 needs to run, pull a file from an FTP and put it on a Rabbit queue.
 
 Alternatively you can create the FTP server and the Rabbit queue with the following commands:
-```
+
+```bash
 docker run -d -p 5672:5672 rabbitmq:3-management:latest
 docker run -d -p 2021:2021 onsdigital/pure-ftpd:latest
 ```
 
 To start the service, use the command:
-```
+
+```bash
 make start
 ```
-
 
 ## Configuration
 
 | Environment variable          | Default   | Description
 | --------------------          | -------   | -----------
-| SEFT_RABBITMQ_HOST            | localhost |
-| SEFT_RABBITMQ_PORT            | 5672      |
-| SEFT_PUBLISHER_RABBIT_QUEUE   | `Seft.CollectionInstruments` | Outgoing queue to publish to
-| SEFT_RABBIT_EXCHANGE          | `message` | RabbitMQ exchange to use
-| PORT                          | -         | Service port
-| SEFT_FTP_HOST                 | 127.0.0.1 | Source host
-| SEFT_FTP_PORT                variables | 2121      | Source port
-| SEFT_FTP_USER                 | user      | Source user
-| SEFT_FTP_PASS                 | password  | Source password
-| RAS_SEFT_PUBLIC_KEY           |           | Destination encryption key
-| SDX_SEFT_PRIVATE_KEY          |           | Local signing key
-| SDX_SEFT_PRIVATE_KEY_PASSWORD |           | Signing key password
+| SEFT_RABBITMQ_HOST            | localhost | RabbitMQ host
+| SEFT_RABBITMQ_PORT            | 5672      | RabbitMQ port
+| SEFT_RABBITMQ_DEFAULT_PASS    | rabbit    | RabbitMQ password
+| SEFT_RABBITMQ_DEFAULT_USER    | rabbit    | RabbitMQ user
+| SEFT_FTP_HOST                 | 127.0.0.1 | FTP host
+| SEFT_FTP_PORT                 | 2121      | FTP port
+| SEFT_FTP_USER                 | user      | FTP user
+| SEFT_FTP_PASS                 | password  | FTP password
+| SDX_KEYS_FILE                 | ./jwt-test-keys/keys.yml | Location of the keys file that contains encryption and signing keys
 | SEFT_FTP_INTERVAL_MS          | 1800000   | Source polling interval (milliseconds)
-| SEFT_RABBITMQ_DEFAULT_PASS    | rabbit    |
-| SEFT_RABBITMQ_DEFAULT_USER    | rabbit    |
-
-_TBC_
-
 
 ## Test
+
+To run the tests locally:
+
+```bash
+make test
+```
 
 To run the tests in a Cloudfoundry environment:
 
 ```shell
-$ cf push seft-publisher-unittest
-$ cf logs seft-publisher-unittest --recent
+cf push seft-publisher-unittest
+cf logs seft-publisher-unittest --recent
 ```
 
-### License
+## Signing/Encryption Keys
 
-Copyright ©‎ 2016, Office for National Statistics (https://www.ons.gov.uk)
+The payload that is put onto the rabbit queue is signed and encypted.  In order to do that, sets of keys are needed to be generated.
+If a new set of test keys need to be created then follow the steps below:
+
+```bash
+cd jwt-test-keys
+# Create the signing keys
+sudo openssl genrsa -out sdc-sdx-outbound-signing-private-v1.pem 4096
+sudo openssl rsa -pubout -in sdc-sdx-outbound-signing-private-v1.pem -out sdc-sdx-outbound-signing-public-v1.pem
+
+# Create the encryption keys
+sudo openssl genrsa -out sdc-ras-outbound-encryption-private-v1.pem 4096
+sudo openssl rsa -pubout -in sdc-ras-outbound-encryption-private-v1.pem -out sdc-ras-outbound-encryption-public-v1.pem
+```
+
+Once this is done, you'll have a set of keys, but you'll need a keys.yml file to be created so that it's useable by sdc-cryptography.
+To do this, do the following after cloning the [sdc-cryptography](https://github.com/ONSdigital/sdc-cryptography) repo to your machine:
+
+```bash
+cd <location of sdc-cryptography>/sdc/crypto/scripts
+./generate_keys.py <location of sdx-seft-publisher-service>/jwt-test-keys
+cp keys.yml <location of sdx-seft-publisher-service>/jwt-test-keys
+```
+
+The keys.yml file should contain 2 entries:
+
+- A public encryption key
+- A private signing key
+
+In a non-test setting, we would generate the signing keys (giving the public signing key to the consumer) and we would receive a public encryption key
+(with the consumer keeping the private encryption to themselves)
+
+## License
+
+Copyright ©‎ 2016, Office for National Statistics (<https://www.ons.gov.uk>)
 
 Released under MIT license, see [LICENSE](LICENSE) for details.

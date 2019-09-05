@@ -1,4 +1,9 @@
 ### Unreleased
+  - Greatly improved logging
+  - Reworked deletion logic so the file is deleted once the delivery confirmation has occured
+  - Use sdc-cryptography for encryption instead of custom solution that was there previously
+  - Update a number of packages to remove deprecation warning that happened on encryption
+  - Drop support for python 3.4
 
 ### 1.3.0 2019-09-04
   - Greatly improved logging
