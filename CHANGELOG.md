@@ -5,6 +5,10 @@
   - Update a number of packages to remove deprecation warning that happened on encryption
   - Drop support for python 3.4
 
+### 1.3.0 2019-09-04
+  - Greatly improved logging
+  - Reworked deletion logic so the file is deleted once the delivery confirmation has occured
+
 ### 1.2.2 2019-07-17
   - Updated urllib 3 to version 1.24.2
   - Improve start up logging
