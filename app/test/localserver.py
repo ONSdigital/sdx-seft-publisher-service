@@ -103,6 +103,7 @@ def parser(description="FTP server for testing."):
         help="Set a file path for log output")
     return p
 
+
 if __name__ == "__main__":
     p = parser()
     args = p.parse_args()
