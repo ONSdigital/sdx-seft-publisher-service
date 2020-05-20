@@ -198,5 +198,6 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
         [self.assertEqual(FTPWorker.get_wd(path), 'EDC_Templates') for path in paths]
 
+
 if __name__ == "__main__":
     unittest.main()
