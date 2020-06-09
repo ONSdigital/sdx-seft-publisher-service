@@ -113,7 +113,6 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
         self.assertTrue(worker.check())
         server.terminate()
 
-    @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
     def test_local_server_delete(self):
         server = multiprocessing.Process(
             target=serve,
@@ -133,7 +132,6 @@ class ServerTests(NeedsTemporaryDirectory, unittest.TestCase):
 
         server.terminate()
 
-    @unittest.skipIf(os.getenv("CF_INSTANCE_GUID"), "local-only test")
     def test_local_server_get(self):
         server = multiprocessing.Process(
             target=serve,
