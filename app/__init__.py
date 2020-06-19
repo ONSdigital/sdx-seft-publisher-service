@@ -4,7 +4,7 @@ import os
 from structlog import wrap_logger
 
 
-__version__ = "1.4.0"
+__version__ = "1.4.2"
 __service__ = "sdx-seft-publisher-service"
 
 LOGGING_FORMAT = "%(asctime)s.%(msecs)06dZ|%(levelname)s: sdx-seft-publisher-service: %(message)s"

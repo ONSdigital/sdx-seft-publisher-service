@@ -1,5 +1,11 @@
 ### Unreleased
 
+### 1.4.2 2020-06-09
+  - Remove Cloudfoundry deployment files
+
+### 1.4.1 2020-05-21
+  - Updated packages
+
 ### 1.4.0 2019-09-23
   - Use sdc-cryptography for encryption instead of custom solution that was there previously
   - Update a number of packages to remove deprecation warning that happened on encryption
